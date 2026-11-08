@@ -1,7 +1,7 @@
 # Turkish tax
 
 Code, raw results and logs behind the article "The Turkish tax: what serving Turkish costs on open LLMs"
-([English](https://huggingface.co/blog/serkanpeker/turkish-tax), [Türkçe](https://huggingface.co/blog/serkanpeker/turkce-vergisi)). The measured numbers are also in the dataset
+([English](https://huggingface.co/blog/serkanpeker/turkish-tax)). The measured numbers are also in the dataset
 [serkanpeker/turkish-tax](https://huggingface.co/datasets/serkanpeker/turkish-tax).
 
 ## Layout

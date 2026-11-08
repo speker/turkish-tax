@@ -15,6 +15,8 @@ RES=${RESULTS_ROOT:-$WORK/results}/$NAME
 PORT=${PORT:-8100}
 OUT_LEN=256
 # Tekrar koşuları için dışarıdan daraltılabilir: CONC="64:1024" LANGS="tr" REPS="3 4 5"
+# LANGS öğesi "dil:uzunluk" ise o koşu farklı çıktı uzunluğuyla yapılır ve dosya adı "dil-o<uzunluk>" olur
+# (ör. LANGS="tr tr:357 en" -> tr_c256_r1, tr-o357_c256_r1, en_c256_r1).
 # İstem sayısı eşzamanlılığın en az 16 katı: kısa koşularda başlama/bitiş dalgası sonucu belirliyor.
 # 562 belgeden fazlası vLLM'in sabit tohumlu oversampling'iyle tamamlanır; TR ve EN aynı belgeleri alır.
 CONC=${CONC:-"1:32 16:256 64:1024 256:4096"}
@@ -59,9 +61,11 @@ curl -sf "127.0.0.1:$PORT/health" >/dev/null || { log "sunucu 20 dakikada hazır
 } > "$RES/ortam.json"
 
 bench() {
+  local len=$OUT_LEN
+  [[ $1 == *:* ]] && len=${1##*:}
   sudo docker exec "$cname" vllm bench serve --backend vllm --base-url http://127.0.0.1:8000 \
-    --model "$NAME" --tokenizer /model --dataset-name custom --dataset-path "/data/prompts_$1.jsonl" \
-    --custom-output-len $OUT_LEN --ignore-eos --disable-shuffle --num-prompts "$3" --max-concurrency "$2" \
+    --model "$NAME" --tokenizer /model --dataset-name custom --dataset-path "/data/prompts_${1%%:*}.jsonl" \
+    --custom-output-len "$len" --ignore-eos --disable-shuffle --num-prompts "$3" --max-concurrency "$2" \
     --seed 0 --percentile-metrics ttft,tpot,itl,e2el --metric-percentiles 50,99 \
     --save-result --result-dir /results --result-filename "$4" >"$RES/${4%.json}.log" 2>&1
 }
@@ -80,7 +84,7 @@ for rep in $REPS; do
     c=${pair%%:*} n=${pair##*:}
     for lang in $LANGS; do
       log "koşu $rep: $lang c=$c n=$n"
-      bench "$lang" "$c" "$n" "${lang}_c${c}_r${rep}.json"
+      bench "$lang" "$c" "$n" "${lang/:/-o}_c${c}_r${rep}.json"
     done
   done
 done

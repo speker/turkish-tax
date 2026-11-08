@@ -38,7 +38,7 @@ configs:
 
 # Turkish tax: serving and quantization cost of Turkish on open LLMs
 
-Measurements behind the article [The Turkish tax](https://huggingface.co/blog/serkanpeker/turkish-tax) ([Türkçe](https://huggingface.co/blog/serkanpeker/turkce-vergisi)): how much more GPU time the same content costs in Turkish than in English on open models served with vLLM, how many tokens seven tokenizers spend on the same Turkish and English text, how much vLLM's FP8 changes Turkish perplexity, and how GGUF quantization and importance-matrix language affect Turkish KL divergence.
+Measurements behind the article [The Turkish tax](https://huggingface.co/blog/serkanpeker/turkish-tax): how much more GPU time the same content costs in Turkish than in English on open models served with vLLM, how many tokens seven tokenizers spend on the same Turkish and English text, how much vLLM's FP8 changes Turkish perplexity, and how GGUF quantization and importance-matrix language affect Turkish KL divergence.
 
 The files contain numbers only. No FLORES+ or Wikipedia sentences, prompts or model outputs are included.
 
@@ -67,4 +67,4 @@ Model revisions are in the `revision` column of `token_ratio` and pinned in the 
 
 ## Türkçe özet
 
-Bu veri kümesi, aynı içeriği açık modellerde Türkçe üretmenin İngilizceye göre GPU maliyetini, yedi tokenizer'ın aynı Türkçe ve İngilizce metne harcadığı token sayısını, vLLM FP8'in Türkçe perplexity'ye etkisini ve GGUF kuantizasyonu ile importance matrix dilinin Türkçe KL divergence'a etkisini ölçen sayıları içeriyor. Dosyalarda yalnız sayılar var; FLORES+ ve Vikipedi metni, istemler ve model çıktıları yok. Servis ölçümleri vLLM 0.33.0, H200, prefix caching kapalı.
+Bu veri kümesi, açık dil modellerinde aynı içeriği Türkçe üretmenin İngilizceye göre ne kadar fazla GPU süresi gerektirdiğini ölçen sayıları içeriyor. Bunun yanında yedi tokenizer'ın aynı Türkçe ve İngilizce metne harcadığı token sayısı, vLLM'in FP8 kuantizasyonunun Türkçe perplexity'ye etkisi ve GGUF kuantizasyonunun ve önem matrisi (importance matrix, imatrix) dilinin Türkçe KL ıraksamasına etkisi de yer alıyor. Dosyalarda yalnızca sayılar var; FLORES+ ve Vikipedi metinleri, istemler ve model çıktıları paylaşılmadı. Servis ölçümleri H200 üzerinde, vLLM 0.33.0 ile ve önek önbelleği (prefix caching) kapalıyken yapıldı.

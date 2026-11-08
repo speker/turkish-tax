@@ -592,12 +592,47 @@ def extra_claims(root: Path) -> list[tuple]:
     return c
 
 
+def scaled_claims() -> list[tuple]:
+    roots = [REPO / "projects/tr-serve/results/olcekli", REPO / "projects/tr-serve/results/olcekli-2"]
+    stated = {
+        TG: ("ytu-ce-cosmos/Turkish-Gemma-9b-T1", 357, 1.529, 1.520),
+        "gemma-4-12b-it": ("google/gemma-4-12B-it", 349, 1.447, 1.429),
+        MI: ("mistralai/Ministral-3-14B-Instruct-2512", 380, 1.626, 1.483),
+        QW: ("Qwen/Qwen3.8-27B", 365, 1.517, 1.406),
+    }
+
+    def tput(name: str, label: str, conc: int) -> float:
+        files = [f for r in roots for f in (r / name).glob(f"{label}_c{conc}_r*.json")]
+        return statistics.median(
+            json.loads(f.read_text(encoding="utf-8"))["output_throughput"] for f in files
+        )
+
+    c = []
+    peaks = []
+    for name, (repo, length, eq, sc) in stated.items():
+        ratio = tokens(repo, "tr_en_orani")
+        c.append((f"ölçekli {name} TR çıktı", length, round(256 * ratio), 0))
+        label = f"tr-o{length}"
+        en256 = tput(name, "en", 256)
+        c.append((f"ölçekli {name} 256 eşit", eq, ratio * en256 / tput(name, "tr", 256), 0.0005))
+        c.append((f"ölçekli {name} 256 ölçekli", sc, ratio * en256 / tput(name, label, 256), 0.0005))
+        # aynı EN hızına bölündüğü için maliyetin düşmesi TR hızının artmasına denk
+        c.append(
+            (f"ölçekli {name} 64 maliyet düşük", 1, int(tput(name, label, 64) > tput(name, "tr", 64)), 0)
+        )
+        logs = [(r / name / "server.log").read_text(encoding="utf-8", errors="replace") for r in roots]
+        peaks.append(max(float(x) for log in logs for x in re.findall(r"KV cache usage: ([\d.]+)%", log)))
+    c.append(("ölçekli KV tepe en düşük %", 22, min(peaks), 0.5))
+    c.append(("ölçekli KV tepe en yüksek %", 72, max(peaks), 0.5))
+    return c
+
+
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser()
     parser.add_argument("--servis", type=Path, default=REPO / "projects/tr-serve/results/serve-v3")
     args = parser.parse_args()
-    claims = text_claims() + serving_claims(args.servis) + extra_claims(args.servis)
+    claims = text_claims() + serving_claims(args.servis) + extra_claims(args.servis) + scaled_claims()
     bad = 0
     for name, stated, actual, tol in claims:
         ok = abs(stated - actual) <= tol

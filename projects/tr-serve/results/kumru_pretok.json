@@ -1,0 +1,36 @@
+{
+ "repo": "vngrs/Kumru-2B@0b3cf37f657ef4013bdc99598545f5d317bd7397",
+ "flores": "openlanguagedata/flores_plus@1147e2dc59f37fbb5c22fd8478770de02cd399f9",
+ "regex": "\\d|\\\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|[^\\\\r\\\\n\\\\p{L}\\\\p{N}]?\\\\p{L}+|\\\\s*[\\\\r\\\\n]+|\\\\s+(?!\\\\S)|\\\\s+",
+ "sozluk": 50176,
+ "ortasinda_bosluk_olan_token": 8072,
+ "cok_kelimeli_token": 8053,
+ "harf_ve_yeni_satir_iceren_token": 1,
+ "harf_ve_tab_iceren_token": 26,
+ "harf_ve_yeni_satir_ornek": [
+  "s\n"
+ ],
+ "harf_ve_tab_ornek": [
+  "\t bir",
+  "\t ve",
+  "\t ve\t",
+  "\tbir\t",
+  "\tolarak\t",
+  "\tve\t",
+  "a\t",
+  "bir\t",
+  "bu\t",
+  "da\t"
+ ],
+ "kumru_tr_token": 53951,
+ "kumru_en_token": 84526,
+ "tr_tokenlarin_cok_kelimeli_orani": 0.08535522974550981,
+ "cumle": 2009,
+ "kumru_tr_en": 0.6382769798641837,
+ "bosluk_onde_tr_token": 69403,
+ "bosluk_onde_en_token": 91452,
+ "bosluk_onde_tr_en": 0.7589008441586843,
+ "bosluk_arkada_tr_token": 63151,
+ "bosluk_arkada_en_token": 105238,
+ "bosluk_arkada_tr_en": 0.6000779186225508
+}

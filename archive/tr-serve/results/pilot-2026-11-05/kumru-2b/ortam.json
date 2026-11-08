@@ -1,0 +1,4 @@
+{"name": "kumru-2b", "base_image": "vllm/vllm-openai@sha256:d825baf9ce4b1b6bfc5ecc7b79880c7e6748c65a72d697ce3d47607aafa84c6e",
+ "image_id": "sha256:1f779ed8f2a28d0066db9ed656a02cbfeba71e452e86592cae996ef1f6cf5c53", "tp": 1, "gpus": "0",
+ "extra_args": "", "model_revision": "0b3cf37f657ef4013bdc99598545f5d317bd7397",
+ "driver": "570.195.03", "output_len": 256, "date": "2026-11-05T04:14:44+03:00"}

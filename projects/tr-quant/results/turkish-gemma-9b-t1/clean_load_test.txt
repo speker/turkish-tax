@@ -1,0 +1,4 @@
+llama.cpp: version: 0.9.0-dev (build 12116, commit 5851a8e50)
+komut: CUDA_VISIBLE_DEVICES= llama.cpp/build/bin/llama-perplexity -m <dosya> -f text/flores_tr.txt -c 512 --chunks 3 -ngl 0 -t 64
+models/turkish-gemma-9b-t1/Q4_K_M-tr.gguf sha256 49a5d7fc409c694755a1bf6043f915fef0e9c0cfc83becdbca44084ebc531866 | Final estimate: PPL = 14.2675 +/- 1.86522
+publish/turkish-gemma-9b-t1/Q4_K_M-tr.gguf sha256 670bf510df42aecc98adac7e577e71d265abb298f435964fa78cd5bf0b0660ac | Final estimate: PPL = 14.2675 +/- 1.86522

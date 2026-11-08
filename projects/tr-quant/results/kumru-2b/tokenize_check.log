@@ -1,0 +1,7 @@
+AYNI  ~/work/tr-quant/text/flores_tr.txt: 53984 token
+AYNI  ~/work/tr-quant/text/flores_en.txt: 84610 token
+AYNI  ~/work/tr-quant/text/calib_tr.txt: 306681 token
+AYNI  ~/work/tr-quant/text/eval_en.txt: 176477 token
+FARK  /tmp/kumru_code_sample.txt: hf 83894, llama.cpp 82703, ilk fark 1656
+      hf    ' = %zu\\n",' [2220, 932, 4974, 321, 339, 1766]
+      llama ' = %zu\n", (' [2220, 932, 4974, 460, 1766, 662]

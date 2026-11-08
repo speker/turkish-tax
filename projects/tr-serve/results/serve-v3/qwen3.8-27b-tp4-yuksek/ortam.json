@@ -1,0 +1,6 @@
+{"name": "qwen3.8-27b-tp4-yuksek", "base_image": "vllm/vllm-openai@sha256:d825baf9ce4b1b6bfc5ecc7b79880c7e6748c65a72d697ce3d47607aafa84c6e",
+ "image_id": "sha256:1f779ed8f2a28d0066db9ed656a02cbfeba71e452e86592cae996ef1f6cf5c53", "tp": 4, "gpus": "1,2,3,4",
+ "cpuset": "0-127", "kernel_cmdline": "BOOT_IMAGE=/vmlinuz-6.8.0-147-generic root=/dev/mapper/ubuntu--vg-ubuntu--lv ro iommu=pt", "conc": "256:4096 512:8192 1024:16384",
+ "diger_mesgul_gpular": "",
+ "extra_args": "--no-enable-prefix-caching", "model_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+ "driver": "570.195.03", "output_len": 256, "date": "2026-11-07T02:40:54+03:00"}

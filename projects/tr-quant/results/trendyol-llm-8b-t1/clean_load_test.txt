@@ -1,0 +1,4 @@
+llama.cpp: version: 0.9.0-dev (build 12116, commit 5851a8e50)
+komut: CUDA_VISIBLE_DEVICES= llama.cpp/build/bin/llama-perplexity -m <dosya> -f text/flores_tr.txt -c 512 --chunks 3 -ngl 0 -t 64
+models/trendyol-llm-8b-t1/Q4_K_M-tr.gguf sha256 b853cc6247e6f829552c43529c678872572d06d8099f390df43bf9b567e48a91 | Final estimate: PPL = 11.9971 +/- 1.22370
+publish/trendyol-llm-8b-t1/Q4_K_M-tr.gguf sha256 8b0e1b4e219a724058400f85a24546ac9aabd11eb4e51e71294236032e389af0 | Final estimate: PPL = 11.9971 +/- 1.22370

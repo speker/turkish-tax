@@ -1,0 +1,9 @@
+The measurement results in this repository (files under `results/` directories: benchmark outputs, logs,
+summaries and CSV files; and the dataset files under `projects/tr-serve/hub/data/`) are licensed under
+the Creative Commons Attribution 4.0 International License (CC BY 4.0):
+https://creativecommons.org/licenses/by/4.0/
+
+Excluded: `*.patch` files (code, MIT, see `LICENSE`; the llama.cpp patch also carries llama.cpp's MIT
+license, Copyright (c) 2023-2026 The ggml authors).
+
+Attribution: Serkan Peker, "The Turkish tax", https://github.com/speker/turkish-tax

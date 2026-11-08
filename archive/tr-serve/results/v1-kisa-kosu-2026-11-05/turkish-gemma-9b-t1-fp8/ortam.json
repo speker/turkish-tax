@@ -1,0 +1,5 @@
+{"name": "turkish-gemma-9b-t1-fp8", "base_image": "vllm/vllm-openai@sha256:d825baf9ce4b1b6bfc5ecc7b79880c7e6748c65a72d697ce3d47607aafa84c6e",
+ "image_id": "sha256:1f779ed8f2a28d0066db9ed656a02cbfeba71e452e86592cae996ef1f6cf5c53", "tp": 1, "gpus": "0",
+ "cpuset": "0-47", "kernel_cmdline": "BOOT_IMAGE=/vmlinuz-6.8.0-147-generic root=/dev/mapper/ubuntu--vg-ubuntu--lv ro iommu=pt",
+ "extra_args": "--quantization fp8", "model_revision": "bc2e3064994eefab3c9043ff58c5b3c7cbfc6c40",
+ "driver": "570.195.03", "output_len": 256, "date": "2026-11-05T05:48:43+03:00"}

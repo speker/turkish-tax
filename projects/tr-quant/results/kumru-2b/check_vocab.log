@@ -1,0 +1,3 @@
+gguf 50176 token, tokenizer.json 50176 token, dolgu [PADn] 0, yazım farkı (▁/boşluk, <0xNN>) 0, uyuşmazlık 0
+  id 7: '<RESERVED_TOKEN_1>'
+  id 8: '<RESERVED_TOKEN_2>'

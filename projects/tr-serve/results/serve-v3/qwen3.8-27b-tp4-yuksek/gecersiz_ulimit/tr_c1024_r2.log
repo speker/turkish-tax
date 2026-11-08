@@ -1,0 +1,268 @@
+W1107 00:04:29.005000 7034 torch/_opaque_base.py:6] torch._opaque_base is deprecated, use torch._custom_class_base instead
+W1107 00:04:29.006000 7034 torch/_library/opaque_object.py:288] register_opaque_type is deprecated, use register_custom_class instead
+W1107 00:04:29.006000 7034 torch/_library/opaque_object.py:211] typ='value' is deprecated, use typ='constant' instead
+Namespace(subparser='bench', bench_type='serve', dispatch_function=<function BenchmarkServingSubcommand.cmd at 0x73a825f631a0>, trust_remote_code=False, seed=0, num_prompts=16384, dataset_name='custom', no_stream=False, dataset_path='/data/prompts_tr.jsonl', no_oversample=False, skip_chat_template=False, enable_multimodal_chat=False, disable_shuffle=True, custom_output_len=256, custom_ensure_client_side_data=False, spec_bench_output_len=256, spec_bench_category=None, sharegpt_output_len=None, timed_trace_chunk_hash_size=16, timed_trace_sec_multiplier=1, timed_trace_label_timestamp='timestamp', timed_trace_label_input_length='input_length', timed_trace_label_output_length='output_length', timed_trace_label_hash_ids='hash_ids', blazedit_min_distance=0.0, blazedit_max_distance=1.0, asr_max_audio_len_sec=inf, asr_min_audio_len_sec=0.0, random_input_len=1024, random_output_len=128, random_range_ratio='0.0', random_prefix_len=0, random_batch_size=1, no_reranker=False, random_mm_base_items_per_request=1, random_mm_num_mm_items_range_ratio=0.0, random_mm_limit_mm_per_prompt={'image': 255, 'video': 1}, random_mm_bucket_config={(256, 256, 1): 0.5, (720, 1280, 1): 0.5, (720, 1280, 16): 0.0}, hf_subset=None, hf_split=None, hf_name=None, hf_output_len=None, bfcl_categories=None, prefix_repetition_prefix_len=256, prefix_repetition_suffix_len=256, prefix_repetition_num_prefixes=10, prefix_repetition_output_len=128, speed_bench_dataset_subset='qualitative', speed_bench_output_len=4096, speed_bench_category=None, label=None, backend='vllm', base_url='http://<IP>:8000', host='<IP>', port=8000, endpoint='/v1/completions', header=None, max_concurrency=1024, model='qwen3.8-27b-tp4-yuksek', input_len=None, output_len=None, tokenizer='/model', tokenizer_mode='auto', use_beam_search=False, logprobs=None, request_rate=inf, burstiness=1.0, probe_request_rate=0.0, disable_tqdm=False, num_warmups=0, profile=False, save_result=True, save_detailed=False, append_result=False, metadata=None, result_dir='/results', result_filename='tr_c1024_r2.json', ignore_eos=True, self_timed=None, percentile_metrics='ttft,tpot,itl,e2el', metric_percentiles='50,99', goodput=None, request_id_prefix='bench-40316306-', top_p=None, top_k=None, min_p=None, temperature=None, frequency_penalty=None, presence_penalty=None, repetition_penalty=None, served_model_name=None, lora_modules=None, lora_assignment='random', ramp_up_strategy=None, ramp_up_start_rps=None, ramp_up_end_rps=None, ready_check_timeout_sec=0, chat_template_kwargs=None, extra_body=None, skip_tokenizer_init=False, insecure=False, plot_timeline=False, timeline_itl_thresholds='25,50', plot_dataset_stats=False, log_config_file=None, logging_config=LoggingConfig(log_level='INFO', formatter='text', configure_logging=True, pylogging_config_file=None))
+(MainProcess pid=7034) INFO 11-07 00:04:37 [datasets.py:324] Oversampled requests to reach 16384 total samples.
+  0%|          | 0/16384 [00:00<?, ?it/s]WARNING: vllm bench serve no longer sets temperature==0 (greedy) in requests by default. The default will be determined on the server side and can be model/API specific. For the old behavior, include --temperature=0.
+Starting initial single prompt test run...
+Skipping endpoint ready check.
+Starting main benchmark run...
+Traffic request rate: inf
+Burstiness factor: 1.0 (Poisson process)
+Maximum request concurrency: 1024
+  0%|          | 1/16384 [00:00<2:14:17,  2.03it/s]  0%|          | 44/16384 [00:00<02:46, 98.29it/s]   1%|          | 132/16384 [00:00<00:56, 287.47it/s]  1%|▏         | 208/16384 [00:00<00:39, 408.46it/s]  2%|▏         | 307/16384 [00:00<00:28, 564.54it/s]  2%|▏         | 393/16384 [00:00<00:24, 644.56it/s]  3%|▎         | 472/16384 [00:01<00:25, 623.20it/s]  3%|▎         | 545/16384 [00:01<00:24, 633.75it/s]  4%|▍         | 616/16384 [00:01<00:27, 567.78it/s]  4%|▍         | 696/16384 [00:01<00:25, 626.10it/s]  5%|▍         | 783/16384 [00:01<00:22, 689.65it/s]  5%|▌         | 883/16384 [00:01<00:20, 772.28it/s]  6%|▌         | 970/16384 [00:01<00:19, 795.75it/s]  7%|▋         | 1072/16384 [00:01<00:17, 857.92it/s]  7%|▋         | 1172/16384 [00:02<00:16, 898.61it/s]  8%|▊         | 1265/16384 [00:02<00:16, 907.71it/s]  8%|▊         | 1365/16384 [00:02<00:16, 933.84it/s]  9%|▉         | 1471/16384 [00:02<00:15, 964.94it/s] 10%|▉         | 1569/16384 [00:02<00:15, 968.62it/s] 10%|█         | 1667/16384 [00:02<00:15, 943.92it/s] 11%|█         | 1780/16384 [00:02<00:14, 996.25it/s] 11%|█▏        | 1882/16384 [00:02<00:14, 1000.96it/s] 12%|█▏        | 1983/16384 [00:02<00:16, 869.90it/s]  13%|█▎        | 2084/16384 [00:02<00:15, 907.31it/s] 13%|█▎        | 2178/16384 [00:03<00:15, 915.06it/s] 14%|█▍        | 2282/16384 [00:03<00:15, 939.53it/s] 15%|█▍        | 2378/16384 [00:03<00:14, 937.41it/s] 15%|█▌        | 2487/16384 [00:03<00:14, 980.65it/s] 16%|█▌        | 2586/16384 [00:03<00:14, 928.71it/s] 16%|█▋        | 2694/16384 [00:03<00:14, 970.32it/s] 17%|█▋        | 2793/16384 [00:03<00:13, 971.34it/s] 18%|█▊        | 2891/16384 [00:03<00:14, 963.37it/s] 18%|█▊        | 2990/16384 [00:03<00:13, 969.40it/s] 19%|█▉        | 3088/16384 [00:04<00:13, 957.83it/s] 19%|█▉        | 3185/16384 [00:04<00:14, 920.37it/s] 20%|██        | 3278/16384 [00:04<00:14, 919.16it/s] 21%|██        | 3376/16384 [00:04<00:13, 935.77it/s] 21%|██        | 3470/16384 [00:04<00:13, 924.58it/s] 22%|██▏       | 3563/16384 [00:04<00:14, 909.25it/s] 22%|██▏       | 3656/16384 [00:04<00:14, 902.07it/s] 23%|██▎       | 3747/16384 [00:04<00:16, 784.78it/s] 23%|██▎       | 3829/16384 [00:04<00:19, 651.26it/s] 24%|██▍       | 3900/16384 [00:05<00:20, 595.58it/s] 24%|██▍       | 3964/16384 [00:05<00:21, 572.17it/s] 25%|██▍       | 4024/16384 [00:05<00:22, 537.53it/s] 25%|██▍       | 4080/16384 [00:05<00:26, 468.53it/s] 25%|██▌       | 4142/16384 [00:05<00:24, 502.72it/s] 26%|██▌       | 4195/16384 [00:05<00:24, 503.02it/s] 26%|██▌       | 4248/16384 [00:05<00:24, 502.35it/s] 26%|██▌       | 4300/16384 [00:05<00:25, 470.56it/s] 27%|██▋       | 4352/16384 [00:06<00:25, 476.10it/s] 27%|██▋       | 4401/16384 [00:06<00:25, 478.02it/s] 27%|██▋       | 4476/16384 [00:06<00:21, 552.83it/s] 28%|██▊       | 4543/16384 [00:06<00:20, 580.57it/s] 28%|██▊       | 4635/16384 [00:06<00:17, 676.89it/s] 29%|██▉       | 4714/16384 [00:06<00:16, 708.80it/s] 29%|██▉       | 4786/16384 [00:06<00:17, 680.04it/s] 30%|██▉       | 4879/16384 [00:06<00:15, 746.33it/s] 30%|███       | 4955/16384 [00:06<00:15, 736.30it/s] 31%|███       | 5045/16384 [00:07<00:14, 775.54it/s] 31%|███▏      | 5124/16384 [00:07<00:14, 753.16it/s] 32%|███▏      | 5200/16384 [00:07<00:15, 736.51it/s] 32%|███▏      | 5274/16384 [00:07<00:16, 670.33it/s] 33%|███▎      | 5343/16384 [00:07<00:17, 614.60it/s] 33%|███▎      | 5406/16384 [00:07<00:19, 572.12it/s] 33%|███▎      | 5465/16384 [00:07<00:19, 551.88it/s] 34%|███▎      | 5521/16384 [00:08<00:27, 400.50it/s] 34%|███▍      | 5567/16384 [00:08<00:28, 376.34it/s] 34%|███▍      | 5609/16384 [00:08<00:33, 324.46it/s] 34%|███▍      | 5651/16384 [00:08<00:31, 342.38it/s] 35%|███▍      | 5703/16384 [00:08<00:28, 377.12it/s] 35%|███▌      | 5744/16384 [00:08<00:30, 345.30it/s] 35%|███▌      | 5781/16384 [00:08<00:31, 336.02it/s] 36%|███▌      | 5817/16384 [00:08<00:33, 319.42it/s] 36%|███▌      | 5865/16384 [00:09<00:30, 347.69it/s] 36%|███▌      | 5917/16384 [00:09<00:27, 376.66it/s] 36%|███▋      | 5962/16384 [00:09<00:26, 387.44it/s] 37%|███▋      | 6004/16384 [00:09<00:26, 395.98it/s] 37%|███▋      | 6047/16384 [00:09<00:26, 389.69it/s] 37%|███▋      | 6099/16384 [00:09<00:24, 412.50it/s] 38%|███▊      | 6151/16384 [00:09<00:23, 435.84it/s] 38%|███▊      | 6203/16384 [00:09<00:22, 457.45it/s] 38%|███▊      | 6250/16384 [00:09<00:22, 451.01it/s] 38%|███▊      | 6296/16384 [00:10<00:22, 444.25it/s] 39%|███▉      | 6353/16384 [00:10<00:20, 479.33it/s] 39%|███▉      | 6402/16384 [00:10<00:21, 461.66it/s] 39%|███▉      | 6449/16384 [00:10<00:23, 418.71it/s] 40%|███▉      | 6515/16384 [00:10<00:20, 472.01it/s] 40%|████      | 6571/16384 [00:10<00:19, 495.29it/s] 40%|████      | 6622/16384 [00:10<00:20, 479.51it/s] 41%|████      | 6674/16384 [00:10<00:20, 483.05it/s] 41%|████      | 6723/16384 [00:10<00:20, 470.85it/s] 41%|████▏     | 6771/16384 [00:11<00:21, 446.15it/s] 42%|████▏     | 6817/16384 [00:11<00:21, 440.47it/s] 42%|████▏     | 6867/16384 [00:11<00:20, 456.26it/s] 42%|████▏     | 6922/16384 [00:11<00:19, 474.88it/s] 43%|████▎     | 6992/16384 [00:11<00:18, 520.59it/s] 43%|████▎     | 7045/16384 [00:11<00:17, 520.59it/s] 43%|████▎     | 7098/16384 [00:11<00:18, 510.27it/s] 44%|████▎     | 7150/16384 [00:11<00:18, 503.74it/s] 44%|████▍     | 7201/16384 [00:11<00:19, 481.37it/s] 44%|████▍     | 7268/16384 [00:12<00:17, 524.55it/s] 45%|████▍     | 7321/16384 [00:12<00:19, 467.62it/s] 45%|████▍     | 7369/16384 [00:12<00:19, 468.31it/s] 45%|████▌     | 7417/16384 [00:12<00:21, 418.83it/s] 46%|████▌     | 7461/16384 [00:12<00:21, 415.00it/s] 46%|████▌     | 7511/16384 [00:12<00:20, 430.15it/s] 46%|████▌     | 7555/16384 [00:12<00:20, 427.61it/s] 46%|████▋     | 7599/16384 [00:12<00:20, 422.22it/s] 47%|████▋     | 7642/16384 [00:13<00:23, 368.78it/s] 47%|████▋     | 7681/16384 [00:13<00:27, 319.08it/s] 47%|████▋     | 7715/16384 [00:13<00:29, 295.35it/s] 47%|████▋     | 7746/16384 [00:13<00:38, 227.26it/s] 47%|████▋     | 7772/16384 [00:13<00:39, 219.19it/s] 48%|████▊     | 7797/16384 [00:13<00:38, 223.31it/s] 48%|████▊     | 7825/16384 [00:13<00:36, 236.15it/s] 48%|████▊     | 7858/16384 [00:13<00:34, 248.64it/s] 48%|████▊     | 7884/16384 [00:14<00:34, 247.13it/s] 48%|████▊     | 7910/16384 [00:14<00:34, 247.18it/s] 48%|████▊     | 7936/16384 [00:14<00:33, 250.47it/s] 49%|████▊     | 7970/16384 [00:14<00:31, 269.20it/s] 49%|████▉     | 8005/16384 [00:14<00:30, 276.64it/s] 49%|████▉     | 8033/16384 [00:14<00:32, 254.67it/s] 49%|████▉     | 8066/16384 [00:14<00:31, 261.72it/s] 49%|████▉     | 8100/16384 [00:14<00:29, 280.25it/s] 50%|████▉     | 8144/16384 [00:14<00:25, 323.16it/s] 50%|█████     | 8196/16384 [00:15<00:22, 371.26it/s] 50%|█████     | 8234/16384 [00:15<00:22, 357.80it/s] 50%|█████     | 8271/16384 [00:15<00:24, 329.10it/s] 51%|█████     | 8312/16384 [00:15<00:23, 350.16it/s] 51%|█████     | 8351/16384 [00:15<00:22, 360.18it/s] 51%|█████     | 8388/16384 [00:15<00:23, 342.38it/s] 51%|█████▏    | 8423/16384 [00:15<00:23, 336.79it/s] 52%|█████▏    | 8458/16384 [00:15<00:23, 333.04it/s] 52%|█████▏    | 8499/16384 [00:16<00:23, 341.33it/s] 52%|█████▏    | 8542/16384 [00:16<00:21, 359.05it/s] 53%|█████▎    | 8604/16384 [00:16<00:18, 431.59it/s] 53%|█████▎    | 8648/16384 [00:16<00:18, 414.02it/s] 53%|█████▎    | 8690/16384 [00:16<00:19, 399.78it/s] 53%|█████▎    | 8740/16384 [00:16<00:17, 427.05it/s] 54%|█████▎    | 8792/16384 [00:16<00:16, 451.74it/s] 54%|█████▍    | 8838/16384 [00:17<00:30, 251.10it/s] 54%|█████▍    | 8874/16384 [00:17<00:28, 262.12it/s] 54%|█████▍    | 8908/16384 [00:17<00:27, 269.42it/s] 55%|█████▍    | 8941/16384 [00:17<00:31, 238.52it/s] 55%|█████▍    | 8974/16384 [00:17<00:29, 248.93it/s] 55%|█████▍    | 9003/16384 [00:17<00:28, 256.34it/s] 55%|█████▌    | 9032/16384 [00:17<00:29, 253.30it/s] 55%|█████▌    | 9061/16384 [00:17<00:28, 261.39it/s] 55%|█████▌    | 9093/16384 [00:17<00:26, 276.37it/s] 56%|█████▌    | 9129/16384 [00:18<00:24, 298.91it/s] 56%|█████▌    | 9165/16384 [00:18<00:23, 307.68it/s] 56%|█████▌    | 9200/16384 [00:18<00:23, 307.93it/s] 56%|█████▋    | 9232/16384 [00:18<00:23, 310.16it/s] 57%|█████▋    | 9264/16384 [00:18<00:23, 309.48it/s] 57%|█████▋    | 9296/16384 [00:18<00:22, 310.94it/s] 57%|█████▋    | 9330/16384 [00:18<00:22, 317.02it/s] 57%|█████▋    | 9373/16384 [00:18<00:20, 342.82it/s] 57%|█████▋    | 9408/16384 [00:18<00:21, 325.53it/s] 58%|█████▊    | 9441/16384 [00:19<00:22, 308.50it/s] 58%|█████▊    | 9473/16384 [00:19<00:23, 289.99it/s] 58%|█████▊    | 9512/16384 [00:19<00:22, 311.69it/s] 58%|█████▊    | 9555/16384 [00:19<00:20, 332.84it/s] 59%|█████▊    | 9598/16384 [00:19<00:19, 350.61it/s] 59%|█████▉    | 9635/16384 [00:19<00:18, 355.39it/s] 59%|█████▉    | 9676/16384 [00:19<00:18, 366.53it/s] 59%|█████▉    | 9715/16384 [00:19<00:17, 372.57it/s] 60%|█████▉    | 9753/16384 [00:19<00:17, 369.38it/s] 60%|█████▉    | 9792/16384 [00:20<00:17, 374.77it/s] 60%|█████▉    | 9830/16384 [00:20<00:18, 355.03it/s] 60%|██████    | 9866/16384 [00:20<00:20, 325.18it/s] 60%|██████    | 9900/16384 [00:20<00:20, 319.79it/s] 61%|██████    | 9933/16384 [00:20<00:20, 312.10it/s] 61%|██████    | 9971/16384 [00:20<00:19, 328.62it/s] 61%|██████    | 10010/16384 [00:20<00:18, 345.60it/s] 61%|██████▏   | 10045/16384 [00:20<00:18, 340.03it/s] 62%|██████▏   | 10080/16384 [00:20<00:18, 339.34it/s] 62%|██████▏   | 10115/16384 [00:21<00:18, 340.77it/s] 62%|██████▏   | 10150/16384 [00:21<00:18, 343.27it/s] 62%|██████▏   | 10185/16384 [00:21<00:22, 278.26it/s] 62%|██████▏   | 10222/16384 [00:21<00:20, 296.57it/s] 63%|██████▎   | 10271/16384 [00:21<00:18, 332.92it/s] 63%|██████▎   | 10318/16384 [00:21<00:16, 368.51it/s] 64%|██████▎   | 10409/16384 [00:21<00:13, 454.71it/s] 64%|██████▍   | 10482/16384 [00:21<00:11, 524.55it/s] 64%|██████▍   | 10554/16384 [00:21<00:10, 575.10it/s] 65%|██████▍   | 10634/16384 [00:22<00:10, 562.07it/s] 65%|██████▌   | 10711/16384 [00:22<00:09, 615.48it/s] 66%|██████▌   | 10775/16384 [00:22<00:09, 590.70it/s] 66%|██████▌   | 10849/16384 [00:22<00:08, 630.46it/s] 67%|██████▋   | 10914/16384 [00:22<00:08, 630.08it/s] 67%|██████▋   | 10983/16384 [00:22<00:09, 590.10it/s] 67%|██████▋   | 11045/16384 [00:22<00:08, 596.33it/s] 68%|██████▊   | 11114/16384 [00:22<00:08, 621.42it/s] 68%|██████▊   | 11177/16384 [00:23<00:08, 598.28it/s] 69%|██████▊   | 11250/16384 [00:23<00:08, 590.83it/s] 69%|██████▉   | 11313/16384 [00:23<00:08, 601.00it/s] 70%|██████▉   | 11392/16384 [00:23<00:08, 595.19it/s] 70%|██████▉   | 11463/16384 [00:23<00:07, 624.82it/s] 71%|███████   | 11560/16384 [00:23<00:07, 612.60it/s] 71%|███████   | 11622/16384 [00:23<00:08, 587.43it/s] 71%|███████▏  | 11698/16384 [00:23<00:08, 570.92it/s] 72%|███████▏  | 11766/16384 [00:23<00:07, 588.55it/s] 72%|███████▏  | 11833/16384 [00:24<00:09, 461.38it/s] 73%|███████▎  | 11921/16384 [00:24<00:08, 517.49it/s] 73%|███████▎  | 11984/16384 [00:24<00:08, 542.05it/s] 74%|███████▎  | 12068/16384 [00:24<00:07, 550.01it/s] 74%|███████▍  | 12126/16384 [00:24<00:07, 556.40it/s] 75%|███████▍  | 12210/16384 [00:24<00:07, 581.67it/s] 75%|███████▍  | 12270/16384 [00:24<00:07, 571.81it/s] 75%|███████▌  | 12362/16384 [00:25<00:06, 594.45it/s] 76%|███████▌  | 12427/16384 [00:25<00:06, 607.87it/s] 76%|███████▋  | 12514/16384 [00:25<00:06, 624.71it/s] 77%|███████▋  | 12577/16384 [00:25<00:06, 594.38it/s] 77%|███████▋  | 12652/16384 [00:25<00:05, 624.95it/s] 78%|███████▊  | 12715/16384 [00:25<00:05, 625.34it/s] 78%|███████▊  | 12784/16384 [00:25<00:05, 642.33it/s] 79%|███████▊  | 12875/16384 [00:25<00:04, 704.61it/s] 79%|███████▉  | 12946/16384 [00:25<00:05, 673.03it/s] 79%|███████▉  | 13016/16384 [00:26<00:04, 679.36it/s] 80%|███████▉  | 13085/16384 [00:26<00:05, 609.09it/s] 80%|████████  | 13148/16384 [00:26<00:05, 592.94it/s] 81%|████████  | 13211/16384 [00:26<00:05, 602.61it/s] 81%|████████  | 13277/16384 [00:26<00:05, 556.29it/s] 81%|████████▏ | 13334/16384 [00:26<00:05, 555.54it/s] 82%|████████▏ | 13391/16384 [00:26<00:05, 538.53it/s] 82%|████████▏ | 13459/16384 [00:26<00:05, 576.87it/s] 83%|████████▎ | 13518/16384 [00:27<00:06, 447.81it/s] 83%|████████▎ | 13586/16384 [00:27<00:05, 501.92it/s] 83%|████████▎ | 13641/16384 [00:27<00:05, 512.17it/s] 84%|████████▎ | 13706/16384 [00:27<00:04, 547.16it/s] 84%|████████▍ | 13773/16384 [00:27<00:04, 537.90it/s] 84%|████████▍ | 13829/16384 [00:27<00:04, 522.51it/s] 85%|████████▍ | 13883/16384 [00:27<00:04, 522.20it/s] 85%|████████▌ | 13937/16384 [00:27<00:04, 526.10it/s] 85%|████████▌ | 13991/16384 [00:27<00:04, 489.15it/s] 86%|████████▌ | 14047/16384 [00:28<00:04, 508.26it/s] 86%|████████▌ | 14113/16384 [00:28<00:04, 550.30it/s] 86%|████████▋ | 14169/16384 [00:28<00:04, 541.63it/s] 87%|████████▋ | 14229/16384 [00:28<00:03, 555.16it/s] 87%|████████▋ | 14293/16384 [00:28<00:03, 579.21it/s] 88%|████████▊ | 14352/16384 [00:28<00:03, 551.57it/s] 88%|████████▊ | 14408/16384 [00:28<00:03, 536.85it/s] 88%|████████▊ | 14463/16384 [00:28<00:03, 488.44it/s] 89%|████████▊ | 14514/16384 [00:28<00:03, 475.43it/s] 89%|████████▉ | 14563/16384 [00:29<00:04, 438.21it/s] 89%|████████▉ | 14608/16384 [00:29<00:05, 333.36it/s] 89%|████████▉ | 14646/16384 [00:29<00:05, 342.03it/s] 90%|████████▉ | 14684/16384 [00:29<00:05, 325.89it/s] 90%|████████▉ | 14725/16384 [00:29<00:04, 345.61it/s] 90%|█████████ | 14762/16384 [00:29<00:05, 316.98it/s] 90%|█████████ | 14796/16384 [00:29<00:04, 321.71it/s] 91%|█████████ | 14830/16384 [00:30<00:05, 278.65it/s] 91%|█████████ | 14860/16384 [00:30<00:05, 283.51it/s] 91%|█████████ | 14890/16384 [00:30<00:05, 267.07it/s] 91%|█████████ | 14918/16384 [00:30<00:05, 262.54it/s] 91%|█████████ | 14945/16384 [00:30<00:05, 263.33it/s] 91%|█████████▏| 14975/16384 [00:30<00:05, 272.77it/s] 92%|█████████▏| 15003/16384 [00:30<00:05, 272.62it/s] 92%|█████████▏| 15031/16384 [00:30<00:05, 262.75it/s] 92%|█████████▏| 15058/16384 [00:30<00:05, 261.61it/s] 92%|█████████▏| 15090/16384 [00:31<00:04, 277.80it/s] 92%|█████████▏| 15118/16384 [00:31<00:04, 276.95it/s] 92%|█████████▏| 15146/16384 [00:31<00:05, 238.25it/s] 93%|█████████▎| 15178/16384 [00:31<00:04, 258.18it/s] 93%|█████████▎| 15214/16384 [00:31<00:04, 285.63it/s] 93%|█████████▎| 15244/16384 [00:31<00:04, 272.85it/s] 93%|█████████▎| 15276/16384 [00:31<00:04, 276.09it/s] 93%|█████████▎| 15308/16384 [00:31<00:03, 272.39it/s] 94%|█████████▎| 15336/16384 [00:31<00:03, 270.46it/s] 94%|█████████▍| 15366/16384 [00:32<00:03, 278.44it/s] 94%|█████████▍| 15395/16384 [00:43<01:51,  8.88it/s]  94%|█████████▍| 15418/16384 [00:43<01:23, 11.62it/s] 94%|█████████▍| 15445/16384 [00:43<00:58, 16.06it/s] 95%|█████████▍| 15498/16384 [00:43<00:31, 28.34it/s] 95%|█████████▌| 15573/16384 [00:43<00:15, 52.19it/s] 95%|█████████▌| 15643/16384 [00:43<00:09, 80.91it/s] 96%|█████████▌| 15716/16384 [00:43<00:05, 117.61it/s] 96%|█████████▋| 15786/16384 [00:43<00:03, 160.29it/s] 97%|█████████▋| 15898/16384 [00:44<00:02, 238.63it/s] 98%|█████████▊| 16081/16384 [00:44<00:00, 420.46it/s] 99%|█████████▉| 16295/16384 [00:44<00:00, 655.04it/s]100%|██████████| 16384/16384 [00:44<00:00, 369.59it/s]
+Failed requests during benchmark run detected (capping to 10):
+Error 0: Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1322, in _wrap_create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 124, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 75, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 185, in _connect_sock
+  File "/usr/lib/python3.12/socket.py", line 233, in __init__
+OSError: [Errno 24] Too many open files
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/vllm/benchmarks/lib/endpoint_request_func.py", line 252, in async_request_openai_completions
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 1756, in __aenter__
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 900, in _request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 854, in _connect_and_send_request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 665, in connect
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1263, in _create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1641, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1610, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1345, in _wrap_create_connection
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host <IP>:8000 ssl:default [Too many open files]
+
+Error 1: Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1322, in _wrap_create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 124, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 75, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 185, in _connect_sock
+  File "/usr/lib/python3.12/socket.py", line 233, in __init__
+OSError: [Errno 24] Too many open files
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/vllm/benchmarks/lib/endpoint_request_func.py", line 252, in async_request_openai_completions
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 1756, in __aenter__
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 900, in _request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 854, in _connect_and_send_request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 665, in connect
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1263, in _create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1641, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1610, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1345, in _wrap_create_connection
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host <IP>:8000 ssl:default [Too many open files]
+
+Error 2: Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1322, in _wrap_create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 124, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 75, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 185, in _connect_sock
+  File "/usr/lib/python3.12/socket.py", line 233, in __init__
+OSError: [Errno 24] Too many open files
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/vllm/benchmarks/lib/endpoint_request_func.py", line 252, in async_request_openai_completions
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 1756, in __aenter__
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 900, in _request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 854, in _connect_and_send_request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 665, in connect
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1263, in _create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1641, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1610, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1345, in _wrap_create_connection
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host <IP>:8000 ssl:default [Too many open files]
+
+Error 3: Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1322, in _wrap_create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 124, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 75, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 185, in _connect_sock
+  File "/usr/lib/python3.12/socket.py", line 233, in __init__
+OSError: [Errno 24] Too many open files
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/vllm/benchmarks/lib/endpoint_request_func.py", line 252, in async_request_openai_completions
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 1756, in __aenter__
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 900, in _request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 854, in _connect_and_send_request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 665, in connect
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1263, in _create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1641, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1610, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1345, in _wrap_create_connection
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host <IP>:8000 ssl:default [Too many open files]
+
+Error 4: Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1322, in _wrap_create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 124, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 75, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 185, in _connect_sock
+  File "/usr/lib/python3.12/socket.py", line 233, in __init__
+OSError: [Errno 24] Too many open files
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/vllm/benchmarks/lib/endpoint_request_func.py", line 252, in async_request_openai_completions
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 1756, in __aenter__
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 900, in _request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 854, in _connect_and_send_request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 665, in connect
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1263, in _create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1641, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1610, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1345, in _wrap_create_connection
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host <IP>:8000 ssl:default [Too many open files]
+
+Error 5: Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1322, in _wrap_create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 124, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 75, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 185, in _connect_sock
+  File "/usr/lib/python3.12/socket.py", line 233, in __init__
+OSError: [Errno 24] Too many open files
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/vllm/benchmarks/lib/endpoint_request_func.py", line 252, in async_request_openai_completions
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 1756, in __aenter__
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 900, in _request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 854, in _connect_and_send_request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 665, in connect
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1263, in _create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1641, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1610, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1345, in _wrap_create_connection
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host <IP>:8000 ssl:default [Too many open files]
+
+Error 6: Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1322, in _wrap_create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 124, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 75, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 185, in _connect_sock
+  File "/usr/lib/python3.12/socket.py", line 233, in __init__
+OSError: [Errno 24] Too many open files
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/vllm/benchmarks/lib/endpoint_request_func.py", line 252, in async_request_openai_completions
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 1756, in __aenter__
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 900, in _request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 854, in _connect_and_send_request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 665, in connect
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1263, in _create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1641, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1610, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1345, in _wrap_create_connection
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host <IP>:8000 ssl:default [Too many open files]
+
+Error 7: Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1322, in _wrap_create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 124, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 75, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 185, in _connect_sock
+  File "/usr/lib/python3.12/socket.py", line 233, in __init__
+OSError: [Errno 24] Too many open files
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/vllm/benchmarks/lib/endpoint_request_func.py", line 252, in async_request_openai_completions
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 1756, in __aenter__
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 900, in _request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 854, in _connect_and_send_request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 665, in connect
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1263, in _create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1641, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1610, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1345, in _wrap_create_connection
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host <IP>:8000 ssl:default [Too many open files]
+
+Error 8: Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1322, in _wrap_create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 124, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 75, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 185, in _connect_sock
+  File "/usr/lib/python3.12/socket.py", line 233, in __init__
+OSError: [Errno 24] Too many open files
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/vllm/benchmarks/lib/endpoint_request_func.py", line 252, in async_request_openai_completions
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 1756, in __aenter__
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 900, in _request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 854, in _connect_and_send_request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 665, in connect
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1263, in _create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1641, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1610, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1345, in _wrap_create_connection
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host <IP>:8000 ssl:default [Too many open files]
+
+Error 9: Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1322, in _wrap_create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 124, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 75, in start_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohappyeyeballs/impl.py", line 185, in _connect_sock
+  File "/usr/lib/python3.12/socket.py", line 233, in __init__
+OSError: [Errno 24] Too many open files
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/vllm/benchmarks/lib/endpoint_request_func.py", line 252, in async_request_openai_completions
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 1756, in __aenter__
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 900, in _request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/client.py", line 854, in _connect_and_send_request
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 665, in connect
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1263, in _create_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1641, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1610, in _create_direct_connection
+  File "/usr/local/lib/python3.12/dist-packages/aiohttp/connector.py", line 1345, in _wrap_create_connection
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host <IP>:8000 ssl:default [Too many open files]
+
+tip: install termplotlib and gnuplot to plot the metrics
+============ Serving Benchmark Result ============
+Successful requests:                     1996      
+Failed requests:                         14388     
+Maximum request concurrency:             1024      
+Benchmark duration (s):                  44.33     
+Total input tokens:                      412197    
+Total generated tokens:                  510976    
+Request throughput (req/s):              45.03     
+Output token throughput (tok/s):         11526.63  
+Peak output token throughput (tok/s):    19297.00  
+Peak concurrent requests:                1256.00   
+Total token throughput (tok/s):          20825.00  
+---------------Time to First Token----------------
+Mean TTFT (ms):                          3073.08   
+Median TTFT (ms):                        2496.56   
+P50 TTFT (ms):                           2496.56   
+P99 TTFT (ms):                           7236.78   
+-----Time per Output Token (excl. 1st token)------
+Mean TPOT (ms):                          73.85     
+Median TPOT (ms):                        75.02     
+P50 TPOT (ms):                           75.02     
+P99 TPOT (ms):                           81.34     
+---------------Inter-token Latency----------------
+Mean ITL (ms):                           73.87     
+Median ITL (ms):                         60.94     
+P50 ITL (ms):                            60.94     
+P99 ITL (ms):                            263.67    
+----------------End-to-end Latency----------------
+Mean E2EL (ms):                          21904.56  
+Median E2EL (ms):                        21641.24  
+P50 E2EL (ms):                           21641.24  
+P99 E2EL (ms):                           26319.49  
+==================================================

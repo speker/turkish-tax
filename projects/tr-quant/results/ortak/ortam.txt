@@ -1,0 +1,17 @@
+llama.cpp: b12116 5851a8e505f4d5fbb183f2847698eb6155d176b7
+cuda kütüphaneleri: libcublas.so.12 libcudart.so.12
+nvcc: V12.8.93
+sürücü: 570.195.03
+indirme ortamı (.venv):
+huggingface-hub==2.4.0
+pyarrow==26.0.1
+dönüştürme ortamı (.venv-convert):
+Using Python 3.12.3 environment at: .venv-convert
+gguf==0.19.0
+huggingface-hub==0.36.2
+numpy==2.2.6
+safetensors==0.8.0
+sentencepiece==0.2.2
+torch==2.11.0+cpu
+transformers==4.57.6
+tokenizer.model: unsloth/gemma-2-9b@9145841c83add11c48155cd7bb87d8656703f997

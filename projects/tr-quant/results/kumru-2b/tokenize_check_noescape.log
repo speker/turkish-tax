@@ -1,0 +1,7 @@
+AYNI  text/flores_tr.txt: 53984 token
+AYNI  text/flores_en.txt: 84610 token
+AYNI  text/calib_tr.txt: 306681 token
+AYNI  text/eval_en.txt: 176477 token
+AYNI  /tmp/kumru_code_sample.txt: 83894 token
+AYNI  llama.cpp/conversion/base.py: 74084 token
+AYNI  /tmp/kumru_code_unicode.txt: 27334 token

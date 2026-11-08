@@ -1,0 +1,42 @@
+{
+ "base": "bf16",
+ "other": "bf16b",
+ "bootstrap": 2000,
+ "cumle_parca": 20,
+ "tr": {
+  "ppl_oran": 1.0,
+  "top1_uyum": 1.0,
+  "ppl_base": 9.265963639272874,
+  "ppl_other": 9.265963639272874,
+  "ort_mutlak_logprob_farki": 0.0,
+  "ek_nll_toplam": 0.0,
+  "ppl_oran_ci95": [
+   1.0,
+   1.0
+  ],
+  "top1_uyum_ci95": [
+   1.0,
+   1.0
+  ],
+  "token": 80609,
+  "parca": 101
+ },
+ "en": {
+  "ppl_oran": 1.0,
+  "top1_uyum": 1.0,
+  "ppl_base": 11.756749347829057,
+  "ppl_other": 11.756749347829057,
+  "ort_mutlak_logprob_farki": 0.0,
+  "ek_nll_toplam": 0.0,
+  "ppl_oran_ci95": [
+   1.0,
+   1.0
+  ],
+  "top1_uyum_ci95": [
+   1.0,
+   1.0
+  ],
+  "token": 54315,
+  "parca": 101
+ }
+}

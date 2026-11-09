@@ -22,6 +22,9 @@ FP8 = REPO / "projects/tr-serve/results/fp8-kalite"
 QUANT = REPO / "projects/tr-quant/results"
 OUT = REPO / "projects/tr-serve/hub/data"
 RUN = re.compile(r"^(tr|en)_c(\d+)_r(\d+)\.json$")
+# night_scaled_v3.sh: 1. oturum results/olcekli, 2. oturum (ters sıra, 64 eşzamanlılık) results/olcekli-2
+SCALED = (REPO / "projects/tr-serve/results/olcekli", REPO / "projects/tr-serve/results/olcekli-2")
+SCALED_RUN = re.compile(r"^(tr|en)(-o\d+)?_c(\d+)_r(\d+)\.json$")
 IN_TABLE = {"turkish-gemma-9b-t1", "gemma-4-12b-it", "ministral-3-14b-bf16", "qwen3.8-27b"}
 # fp8_quality.py etiketleri -> veri kümesi etiketleri
 LABELS = {"fp8": "fp8_dynamic", "fp8-yerel": "fp8_vendor", "bf16b": "bf16_repeat"}
@@ -188,8 +191,45 @@ def gguf() -> None:
     write("gguf_kld.parquet", rows)
 
 
+def scaled() -> None:
+    rows = []
+    for session, order in ((1, "tr, tr_scaled, en"), (2, "en, tr_scaled, tr")):
+        root = SCALED[session - 1]
+        for d in sorted(p for p in root.iterdir() if p.is_dir()):
+            for f in sorted(d.glob("*.json")):
+                m = SCALED_RUN.match(f.name)
+                if not m:
+                    continue
+                r = json.loads(f.read_text(encoding="utf-8"))
+                rows.append(
+                    {
+                        "model": served_repo(d.name),
+                        "session": session,
+                        "order_within_repetition": order,
+                        "lang": "en" if m[1] == "en" else "tr",
+                        "output_length": "scaled" if m[2] else "256",
+                        "output_tokens_per_request": r["total_output_tokens"] // r["completed"],
+                        "concurrency": int(m[3]),
+                        "run": int(m[4]),
+                        "num_prompts": r["num_prompts"],
+                        "completed": r["completed"],
+                        "failed": r["failed"],
+                        "total_input_tokens": r["total_input_tokens"],
+                        "total_output_tokens": r["total_output_tokens"],
+                        "duration_s": round(r["duration"], 3),
+                        "output_tokens_per_s": round(r["output_throughput"], 2),
+                        "ttft_p50_ms": round(r["median_ttft_ms"], 2),
+                        "ttft_p99_ms": round(r["p99_ttft_ms"], 2),
+                        "tpot_p50_ms": round(r["median_tpot_ms"], 3),
+                        "end_time_utc": r["date"],
+                    }
+                )
+    write("serving_scaled.parquet", rows)
+
+
 if __name__ == "__main__":
     serving()
     tokens()
     fp8()
     gguf()
+    scaled()

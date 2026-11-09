@@ -34,11 +34,13 @@ configs:
   data_files: data/fp8_quality.parquet
 - config_name: gguf_kld
   data_files: data/gguf_kld.parquet
+- config_name: serving_scaled
+  data_files: data/serving_scaled.parquet
 ---
 
 # Turkish tax: serving and quantization cost of Turkish on open LLMs
 
-Measurements behind the article [The Turkish tax](https://huggingface.co/blog/serkanpeker/turkish-tax): how much more GPU time the same content costs in Turkish than in English on open models served with vLLM, how many tokens seven tokenizers spend on the same Turkish and English text, how much vLLM's FP8 changes Turkish perplexity, and how GGUF quantization and importance-matrix language affect Turkish KL divergence.
+Measurements behind the article [The Turkish tax](https://huggingface.co/blog/serkanpeker/turkish-tax) ([Türkçe](https://huggingface.co/blog/serkanpeker/turkce-vergisi)): how much more GPU time the same content costs in Turkish than in English on open models served with vLLM, how many tokens seven tokenizers spend on the same Turkish and English text, how much vLLM's FP8 changes Turkish perplexity, and how GGUF quantization and importance-matrix language affect Turkish KL divergence.
 
 The files contain numbers only. No FLORES+ or Wikipedia sentences, prompts or model outputs are included.
 
@@ -48,6 +50,7 @@ The files contain numbers only. No FLORES+ or Wikipedia sentences, prompts or mo
 - `token_ratio`: token counts of 2,009 parallel FLORES+ sentences (dev and devtest) for seven tokenizers at pinned revisions.
 - `fp8_quality`: perplexity ratio and top-1 agreement of vLLM FP8 against BF16 on the same FLORES+ text, with 95% bootstrap intervals over 101 chunks and a paired Turkish-minus-English difference. `fp8_dynamic` is vLLM's `--quantization fp8` on BF16 weights, `fp8_vendor` the FP8 weights Mistral ships; `bf16 vs bf16_repeat` rows are a second BF16 run that reproduced every log-probability. `content_extra_loss_ratio_tr_en` is the extra log-loss from FP8 summed over the same content, Turkish divided by English (the same value on both language rows); for `fp8_vendor` the English loss is indistinguishable from zero, so its interval is meaningless. The per-chunk sums behind every interval are in the code repository (`results/fp8-kalite/*/parca_*.csv`).
 - `gguf_kld`: llama.cpp (b12116) KL divergence of GGUF quants against BF16 on Wikipedia and FLORES+ text, for Turkish and English importance matrices, with four calibration samples (`calibration_seed`) for Q4_K_M; `calibration_seed` is empty for rows without an importance matrix. `ppl_bf16` comes from a separate BF16 `llama-perplexity` run on the same text. The PPL(base) that `llama-perplexity` prints in KL-divergence mode is not used: it stores base log-probabilities with a floor 16 logits below the top one, which puts it 0.85% to 1.28% below the BF16 run for Turkish-Gemma-9b-T1 (within 0.06% for the other two models). KL divergence skips vocabulary entries whose base log-probability is −16 or below, llama.cpp's own cutoff, the same for every row. A quantized model's perplexity can come out below BF16 (Turkish-Gemma-9b-T1 Q5_K_M and Q6_K on FLORES+ Turkish, −0.46% and −0.41%); KL divergence is the comparison metric.
+- `serving_scaled`: a follow-up to `serving_runs` on the four table models (72 rows). English output stays at 256 tokens; Turkish runs once at 256 tokens and once at 256 × the model's TR/EN token ratio (`output_length` = `scaled`, 349 to 380 tokens in `output_tokens_per_request`), so that both languages generate the same content. All three ran on the same server in each repetition, in the order given by `order_within_repetition`: session 1 has two repetitions at 256 concurrent requests, session 2 (reversed order) two more at 256 and two at 64. With scaled Turkish output the TR/EN cost at 256 requests was 1.406 to 1.520, against 1.447 to 1.626 for the 256-token runs on the same servers.
 
 ## How it was measured
 
@@ -55,7 +58,7 @@ Scripts, raw per-run outputs and logs are in [speker/turkish-tax](https://github
 
 ## Limitations
 
-- Serving cost per word is an estimate combining throughput under fixed 256-token outputs with FLORES+ token counts.
+- Serving cost per word is an estimate combining throughput under fixed 256-token outputs with FLORES+ token counts. `serving_scaled` checks the output-length part at 64 and 256 concurrent requests; where the KV cache fills, it was not measured.
 - gpt-oss-120b and Kumru-2B runs did not agree within 5% across repeats; they are in `serving_runs` but not in the article's table.
 - FLORES+ may be in some models' training data.
 - Perplexity from `prompt_logprobs` is not KL divergence.
@@ -67,4 +70,4 @@ Model revisions are in the `revision` column of `token_ratio` and pinned in the 
 
 ## Türkçe özet
 
-Bu veri kümesi, açık dil modellerinde aynı içeriği Türkçe üretmenin İngilizceye göre ne kadar fazla GPU süresi gerektirdiğini ölçen sayıları içeriyor. Bunun yanında yedi tokenizer'ın aynı Türkçe ve İngilizce metne harcadığı token sayısı, vLLM'in FP8 kuantizasyonunun Türkçe perplexity'ye etkisi ve GGUF kuantizasyonunun ve önem matrisi (importance matrix, imatrix) dilinin Türkçe KL ıraksamasına etkisi de yer alıyor. Dosyalarda yalnızca sayılar var; FLORES+ ve Vikipedi metinleri, istemler ve model çıktıları paylaşılmadı. Servis ölçümleri H200 üzerinde, vLLM 0.33.0 ile ve önek önbelleği (prefix caching) kapalıyken yapıldı.
+Bu veri kümesi, açık dil modellerinde aynı içeriği Türkçe üretmenin İngilizceye göre ne kadar fazla GPU süresi gerektirdiğini ölçen sayıları içeriyor. Bunun yanında yedi tokenizer'ın aynı Türkçe ve İngilizce metne harcadığı token sayısı, vLLM'in FP8 kuantizasyonunun Türkçe perplexity'ye etkisi ve GGUF kuantizasyonunun ve önem matrisi (importance matrix, imatrix) dilinin Türkçe KL ıraksamasına etkisi de yer alıyor. Dosyalarda yalnızca sayılar var; FLORES+ ve Vikipedi metinleri, istemler ve model çıktıları paylaşılmadı. Servis ölçümleri H200 üzerinde, vLLM 0.33.0 ile ve önek önbelleği (prefix caching) kapalıyken yapıldı. `serving_scaled` tablosunda Türkçe çıktı, aynı içeriğe karşılık gelecek şekilde modelin token oranıyla uzatıldı; bu durumda 256 eşzamanlı istekte TR/EN maliyet 1,406 ile 1,520 arasında kaldı.

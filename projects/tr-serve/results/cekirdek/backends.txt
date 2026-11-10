@@ -1,0 +1,6 @@
+gemma-4-12b-it: Using TRITON_FLASH_ATTN attention backend out of potential backends: ['TRITON_FLASH_ATTN', 'FLASH_ATTN', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+gemma-4-12b-it: Using FlashAttention version 4
+turkish-gemma-9b-t1: Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+turkish-gemma-9b-t1: Using FlashAttention version 3
+turkish-gemma-9b-t1-fa4: Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+turkish-gemma-9b-t1-fa4: Using FlashAttention version 4

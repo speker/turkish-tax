@@ -1,0 +1,14 @@
+[13:19:03] quiet kiralama: 9dd8bbb6
+[13:19:03] başla turkish-gemma-9b-t1 (GPU 1, CPU 0-31, N 357, )
+[13:19:03] başla gemma-4-12b-it (GPU 2, CPU 32-63, N 349, )
+[13:19:03] başla gemma-4-12b-it-triton (GPU 5, CPU 128-159, N 349, --attention-backend TRITON_ATTN)
+[13:19:03] başla turkish-gemma-9b-t1-triton (GPU 4, CPU 96-127, N 357, --attention-backend TRITON_ATTN)
+[13:19:03] başla turkish-gemma-9b-t1-fa4 (GPU 3, CPU 64-95, N 357, --attention-config.flash_attn_version=4)
+[13:40:50] tamam turkish-gemma-9b-t1-triton
+[13:42:15] tamam turkish-gemma-9b-t1
+[13:46:10] tamam gemma-4-12b-it-triton
+[13:48:36] tamam turkish-gemma-9b-t1-fa4
+[13:49:59] tamam gemma-4-12b-it
+9dd8bbb6 bırakıldı
+[13:49:59] kiralama bırakıldı: 9dd8bbb6
+[13:49:59] bitti

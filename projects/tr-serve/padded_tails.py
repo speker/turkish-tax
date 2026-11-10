@@ -55,6 +55,13 @@ def main() -> None:
         print(f"  per token {base:.3f} ms: TTFT term {ttft_term[0]:.3f} → {ttft_term[1]:.3f} "
               f"({(ttft_term[1] - ttft_term[0]) / base:+.2%}), TPOT term {tpot_term[0]:.3f} → {tpot_term[1]:.3f} "
               f"({(tpot_term[1] - tpot_term[0]) / base:+.2%}), occupancy ×{long_['occupancy'] / short['occupancy']:.3f}")
+        for stat in ("mean", "median"):
+            d = long_[f"{stat}_tpot_ms"] - short[f"{stat}_tpot_ms"]
+            per_rep = [run(ROOT / model / f"en-o{n}_c256_r{r}.json")[f"{stat}_tpot_ms"]
+                       - run(ROOT / model / f"en_c256_r{r}.json")[f"{stat}_tpot_ms"] for r in (1, 2)]
+            print(f"  {stat} TPOT slope: {d:+.3f} ms over {n - 256} added output tokens = "
+                  f"{1000 * d / (n - 256):+.2f} µs per added token (repetitions: "
+                  f"{', '.join(f'{1000 * x / (n - 256):+.2f}' for x in per_rep)})")
 
 
 if __name__ == "__main__":

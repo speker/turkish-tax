@@ -5,15 +5,17 @@ Cells: Turkish-Gemma on FLASH_ATTN with FA3 (default), FA4 and TRITON_ATTN; Gemm
 (TRITON_FLASH_ATTN, whose text queries go to FlashAttention 4) and on TRITON_ATTN. English prompts, 256 and
 N = 256 x token ratio output tokens, 256 concurrent requests, five repetitions each.
 
-    uv run python padded_backend_summary.py
+    uv run python padded_backend_summary.py                       # five servers side by side on one host
+    uv run python padded_backend_summary.py results/cekirdek-tek  # each server alone (alone_backend.sh)
 """
 
 import json
 import re
 import statistics
+import sys
 from pathlib import Path
 
-ROOT = Path(__file__).parent / "results" / "cekirdek"
+ROOT = Path(__file__).parent / (sys.argv[1] if len(sys.argv) > 1 else "results/cekirdek")
 CELLS = {"turkish-gemma-9b-t1": 357, "turkish-gemma-9b-t1-fa4": 357, "turkish-gemma-9b-t1-triton": 357,
          "gemma-4-12b-it": 349, "gemma-4-12b-it-triton": 349}
 REPS = (1, 2, 3, 4, 5)

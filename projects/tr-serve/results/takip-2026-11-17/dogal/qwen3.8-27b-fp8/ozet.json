@@ -1,0 +1,50 @@
+{
+ "tr_s0": {
+  "istek": 562,
+  "hata": 0,
+  "sinira_dayanan": 0,
+  "token_kelime": 2.2695,
+  "flores_token_kelime": 2.231,
+  "fark_yuzde": 1.73,
+  "cevap_token_medyan": 392.0,
+  "dil": {
+   "tr": 562
+  }
+ },
+ "en_s0": {
+  "istek": 562,
+  "hata": 0,
+  "sinira_dayanan": 0,
+  "token_kelime": 1.2479,
+  "flores_token_kelime": 1.253,
+  "fark_yuzde": -0.41,
+  "cevap_token_medyan": 173.5,
+  "dil": {
+   "en": 562
+  }
+ },
+ "tr_s1": {
+  "istek": 562,
+  "hata": 0,
+  "sinira_dayanan": 0,
+  "token_kelime": 2.2645,
+  "flores_token_kelime": 2.231,
+  "fark_yuzde": 1.5,
+  "cevap_token_medyan": 386.5,
+  "dil": {
+   "tr": 562
+  }
+ },
+ "en_s1": {
+  "istek": 562,
+  "hata": 0,
+  "sinira_dayanan": 0,
+  "token_kelime": 1.2394,
+  "flores_token_kelime": 1.253,
+  "fark_yuzde": -1.09,
+  "cevap_token_medyan": 174.0,
+  "dil": {
+   "en": 562
+  }
+ }
+}

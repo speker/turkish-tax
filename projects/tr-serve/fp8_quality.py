@@ -7,6 +7,8 @@ vLLM imajının içinde çalışır (fp8_quality.sh başlatır).
   paired:  python3 fp8_quality.py paired --dir /out --base bf16 --other fp8   (TR ve EN farkı, eşleştirilmiş)
   chunks:  python3 fp8_quality.py chunks --dir /out --base bf16 --other fp8   (parca_<other>.csv)
 
+--docs docs.json verilirse birim 20 cümlelik parça değil servis ölçümünün 562 FLORES+ belgesidir (her belge
+kendi bağlamıyla; bootstrap kaynak belge düzeyinde).
 run, her dil için metni 20 cümlelik parçalara böler (iki dilde aynı bölme) ve prompt_logprobs=1 ile konum
 başına gerçek tokenın log-olasılığını ve en olası tokenı .npz'ye yazar. compare aynı konumlarda PPL oranını,
 en olası token uyumunu ve gerçek tokenın log-olasılık farkını hesaplar; güven aralığı parçalar üzerinde
@@ -50,8 +52,9 @@ def run(args: argparse.Namespace) -> None:
     )
     params = SamplingParams(max_tokens=1, temperature=0.0, prompt_logprobs=1)
     tok = llm.get_tokenizer()
+    docs = json.loads(args.docs.read_text(encoding="utf-8")) if args.docs else None
     for lang in LANGS:
-        prompts = load_chunks(args.text_dir / f"flores_{lang}.txt")
+        prompts = [d[lang] for d in docs] if docs else load_chunks(args.text_dir / f"flores_{lang}.txt")
         if args.add_bos:
             # Gemma 4'ün tokenizer'ı düz metne <bos> eklemiyor; <bos>'suz dağılım anlamsız (PPL ~23.000)
             from vllm.inputs import TokensPrompt
@@ -160,7 +163,7 @@ def compare(args: argparse.Namespace) -> None:
         "base": args.base,
         "other": args.other,
         "bootstrap": BOOTSTRAP,
-        "cumle_parca": SENTENCES_PER_CHUNK,
+        "birim": args.birim,
     }
     for lang in LANGS:
         sums = load_sums(args.dir, args.base, args.other, lang)
@@ -189,7 +192,9 @@ def paired(args: argparse.Namespace) -> None:
 
     def stats(w: np.ndarray) -> tuple[float, float]:
         tr, en = summarize(sums["tr"], w), summarize(sums["en"], w)
-        return tr["ppl_oran"] - en["ppl_oran"], tr["ek_nll_toplam"] / en["ek_nll_toplam"]
+        # İki koşu birebir aynıysa (ör. BF16'ya karşı ikinci BF16) ek kayıp sıfırdır, oran tanımsız.
+        ratio = tr["ek_nll_toplam"] / en["ek_nll_toplam"] if en["ek_nll_toplam"] else float("nan")
+        return tr["ppl_oran"] - en["ppl_oran"], ratio
 
     point = stats(np.ones(n))
     boot = np.array([stats(resample(rng, n)) for _ in range(BOOTSTRAP)])
@@ -215,6 +220,7 @@ def main() -> None:
     r.add_argument("--quantization")
     r.add_argument("--add-bos", action="store_true", help="tokenizer eklemiyorsa parça başına <bos> ekle")
     r.add_argument("--text-dir", type=Path, required=True)
+    r.add_argument("--docs", type=Path, help="birim olarak belgeler (docs.json, {'tr': ..., 'en': ...})")
     r.add_argument("--out", type=Path, required=True)
     for name in ("compare", "paired", "chunks"):
         c = sub.add_parser(name)
@@ -222,6 +228,9 @@ def main() -> None:
         c.add_argument("--base", required=True)
         c.add_argument("--other", required=True)
         c.add_argument("--out-dir", type=Path, help="JSON'ların yazılacağı dizin (varsayılan --dir)")
+        c.add_argument(
+            "--birim", default=f"{SENTENCES_PER_CHUNK} cümlelik parça", help="bootstrap birimi, özete yazılır"
+        )
     args = parser.parse_args()
     if getattr(args, "out_dir", None) is None and args.cmd != "run":
         args.out_dir = args.dir

@@ -15,6 +15,16 @@ Code, raw results and logs behind the article "The Turkish tax: what serving Tur
 - `projects/tr-quant/`: llama.cpp GGUF quantization with Turkish and English importance matrices,
   KL divergence on Wikipedia and FLORES+, and the Kumru-2B pre-tokenizer patch for llama.cpp
   (`llama_kumru_patch.py`).
+- Follow-up of 16 and 17 November: `takip_kosulari.sh` lists the commands of every follow-up serving run,
+  grouped by result directory: `results/takip-2026-11-17/kosu/` (run JSONs without the per-request arrays,
+  plus `ortam.json`), `results/takip-2026-11-17/kv/` (the server's KV-cache lines) and, for the replication on
+  the second machine and the two-GPU points, `results/tekrar-2026-11-17/kosu/`. `takip_ozet.py` and
+  `tekrar_ozet.py` wrote the summaries next to them. `fp8_belge.sh` and `belebele_fp8.sh` measure
+  document-level FP8 quality and Belebele accuracy, `dogal_cevap.py` and `dogal_metin_tpw.py` the
+  natural-text checks. In `projects/tr-quant/`, `doc_kld.cpp` computes
+  document-level KL divergence (`results/belge-kld/`, CPU backend in `results/belge-kld-cpu/`),
+  `iq_seeds.sh` repeats the IQ quants with three calibration seeds, and `belebele_gguf.cpp` scores Belebele
+  on GGUF files (`results/belebele-gguf/`).
 - `archive/`: earlier runs (v2 had vLLM's default prefix caching on) and the scripts that sequenced them.
 
 Comments and some file names are in Turkish.
@@ -24,14 +34,16 @@ Comments and some file names are in Turkish.
 No GPU is needed to recompute the article's numbers from the raw files in this repository:
 
 ```
-uv run python projects/tr-serve/verify_article.py     # the article's numbers (typed in the script) vs sources
+uv run python projects/tr-serve/verify_article.py     # the article's numbers (typed in the script) vs
+                                                      # sources, follow-up of 16 and 17 November included
 uv run python projects/tr-serve/verify_serve.py --prefix-kapali   # raw bench JSONs against ozet.csv
 uv run python projects/tr-quant/verify_kld.py         # GGUF KL divergence against llama-perplexity logs
 uv run python projects/tr-serve/tp_latency.py         # tensor-parallel throughput, latency, GPU-hours
 uv run python -m unittest discover -s tests           # includes recomputing every FP8 interval
 ```
 
-The FP8 intervals are recomputed from `results/fp8-kalite/*/parca_*.csv`, per-chunk sums of the per-token
+The FP8 intervals are recomputed from `results/fp8-kalite/*/parca_*.csv` and, for the follow-up,
+`results/takip-2026-11-17/fp8-kalite-*/*/parca_*.csv`: per-chunk or per-document sums of the per-token
 log-probabilities (`fp8_quality.py compare|paired --dir <model dir> --base bf16 --other fp8`). The per-token
 arrays are not published because their token ids encode the FLORES+ text. In
 `projects/tr-quant/results/*/kld.csv`, `ppl_base` is the base perplexity llama-perplexity prints in
@@ -40,10 +52,11 @@ dataset's `ppl_bf16`) for BF16 perplexity.
 
 ## Running the measurements
 
-The scripts ran on one 6×H200 machine with vLLM 0.33.0 in Docker (`Dockerfile.bench`) and llama.cpp
-b12116. Paths assume `~/work/tr-serve` and `~/work/tr-quant`. The sequencing scripts reserve GPUs through
-`~/bin/lease`, a small local lock tool for sharing the machine between jobs; remove those lines or replace
-them with your own scheduler.
+The main campaign ran on one 6×H200 machine with vLLM 0.33.0 in Docker (`Dockerfile.bench`) and
+llama.cpp b12116. The follow-up ran on the same machine, by then with eight H200 GPUs, and on a second
+machine with five H200 GPUs, with the same image and model files. Paths assume `~/work/tr-serve` and
+`~/work/tr-quant`. The sequencing scripts reserve GPUs through `~/bin/lease`, a small local lock tool for
+sharing the machine between jobs; remove those lines or replace them with your own scheduler.
 
 `projects/tr-quant/setup.sh` builds llama.cpp b12116 and checks its commit;
 `projects/tr-quant/results/ortak/ortam.txt` records the environment used (its output, plus the CUDA

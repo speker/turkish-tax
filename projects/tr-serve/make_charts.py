@@ -38,6 +38,17 @@ SERVED = {  # sonuç dizini -> (görünen ad, token_ratio.csv'deki repo, ölçek
     "turkish-gemma-9b-t1": ("Turkish-Gemma-9b-T1", "ytu-ce-cosmos/Turkish-Gemma-9b-T1", 357),
     "ministral-3-14b-bf16": ("Ministral 3 14B", "mistralai/Ministral-3-14B-Instruct-2512", 380),
 }
+# Ministral 3 14B'nin ana kampanyadaki iki koşusu tutmadı (1,575 ve 1,665): sabit çıktılı değer on iki koşunun
+# medyanı (ana kampanya 2, ikinci makine 5, ana makinede tek başına 5), ölçekli değer dokuz koşunun.
+POOLED_MAIN = {
+    "ministral-3-14b-bf16": (
+        "serve-v3/ministral-3-14b-bf16",
+        "tekrar-2026-11-17/kosu/yedek/ministral-3-14b-bf16",
+        "takip-2026-11-17/kosu/takip-tek/ministral-3-14b-bf16",
+    )
+}
+SCALED_DIRS = ("olcekli", "olcekli-2")
+SCALED_EXTRA = {"ministral-3-14b-bf16": ("takip-2026-11-17/kosu/takip-ek/ministral-3-14b-bf16-olcekli",)}
 FP8_ROWS = (  # (dizin, etiket, görünen ad)
     ("turkish-gemma-9b-t1", "fp8", "Turkish-Gemma-9b-T1"),
     ("qwen3.8-27b", "fp8", "Qwen3.8-27B"),
@@ -61,14 +72,14 @@ TEXT = {
     "cost": {
         "en": (
             "GPU time for the same content, Turkish ÷ English",
-            "256 concurrent requests, vLLM 0.33.0, BF16, one GPU per model",
-            "Turkish output 256 tokens (main runs)",
+            "256 concurrent requests, vLLM 0.33.0, BF16, one GPU per model; scaled: median of paired runs",
+            "Turkish output 256 tokens (main runs; Ministral: median of 12 runs)",
             "Turkish output scaled to the same content (follow-up)",
         ),
         "tr": (
             "Aynı içeriğin GPU süresi, Türkçe ÷ İngilizce",
-            "256 eşzamanlı istek, vLLM 0.33.0, BF16, model başına bir GPU",
-            "Türkçe çıktı 256 token (ana ölçüm)",
+            "256 eşzamanlı istek, vLLM 0.33.0, BF16, model başına bir GPU; ölçekli: eşli koşuların medyanı",
+            "Türkçe çıktı 256 token (ana ölçüm; Ministral: 12 koşunun medyanı)",
             "Türkçe çıktı aynı içeriğe ölçekli (ek ölçüm)",
         ),
     },
@@ -92,14 +103,14 @@ TEXT = {
     },
     "gguf": {
         "en": (
-            "Turkish KL divergence of Q4_K_M against BF16, FLORES+",
-            "llama.cpp b12116; matrix bars: mean of four calibration samples, dots: each sample",
+            "Turkish KL divergence of Q4_K_M against BF16, 562 FLORES+ documents",
+            "llama.cpp b12116, all tokens; matrix bars: mean of 4 calibration samples, dots: each sample",
             ("no importance matrix", "English matrix", "Turkish matrix"),
             "mean KL divergence per token (lower is better)",
         ),
         "tr": (
-            "Q4_K_M'nin BF16'ya göre Türkçe KL ıraksaması, FLORES+",
-            "llama.cpp b12116; matrisli çubuk: dört kalibrasyon örnekleminin ortalaması, nokta: her örneklem",
+            "Q4_K_M'nin BF16'ya göre Türkçe KL ıraksaması, 562 FLORES+ belgesi",
+            "llama.cpp b12116, bütün token'lar; çubuk: 4 örneklemin ortalaması, nokta: her örneklem",
             ("önem matrisi yok", "İngilizce matris", "Türkçe matris"),
             "token başına ortalama KL ıraksaması (düşük daha iyi)",
         ),
@@ -163,17 +174,24 @@ def cost(lang: str) -> None:
         r["model"]: int(r["tr_token"]) / int(r["en_token"]) for r in read_csv(SERVE / "token_ratio.csv")
     }
 
-    def tput(d: str, label: str) -> float:
-        files = [f for s in ("olcekli", "olcekli-2") for f in (SERVE / s / d).glob(f"{label}_c256_r*.json")]
-        return statistics.median(
-            json.loads(f.read_text(encoding="utf-8"))["output_throughput"] for f in files
-        )
+    def paired(dirs: list[Path], tr_label: str, rho: float) -> float:
+        """Aynı tekrarın İngilizce ve Türkçe koşularından TR/EN maliyet; koşular üzerinde medyan."""
+        costs = []
+        for d in dirs:
+            for en in d.glob("en_c256_r*.json"):
+                tr = d / en.name.replace("en_", f"{tr_label}_", 1)
+                if tr.exists():
+                    e, t = (json.loads(f.read_text(encoding="utf-8"))["output_throughput"] for f in (en, tr))
+                    costs.append(rho * e / t)
+        return statistics.median(costs)
 
     names, main, scaled = [], [], []
     for d, (name, repo, n) in SERVED.items():
+        rho = ratios[repo]
         names.append(name)
-        main.append(v3[d])
-        scaled.append(ratios[repo] * tput(d, "en") / tput(d, f"tr-o{n}"))
+        main.append(paired([SERVE / p for p in POOLED_MAIN[d]], "tr", rho) if d in POOLED_MAIN else v3[d])
+        dirs = [SERVE / s / d for s in SCALED_DIRS] + [SERVE / p for p in SCALED_EXTRA.get(d, ())]
+        scaled.append(paired(dirs, f"tr-o{n}", rho))
     title, sub, l_main, l_scaled = TEXT["cost"][lang]
     fig, ax = plt.subplots(figsize=(8, 4.5))
     x = range(len(names))
@@ -233,18 +251,16 @@ def gguf(lang: str) -> None:
     fig, ax = plt.subplots(figsize=(8, 4.5))
     w = 0.26
     colors = (GREY, EN_C, TR_C)
+    def doc_kld(d: str, variant: str) -> float:
+        """Türkçe metinde token başına KL: belge toplamlarının toplamı / token (doc_kld.cpp çıktısı)."""
+        rows = read_csv(QUANT / "belge-kld" / d / f"tr_{variant}.csv")
+        return sum(float(r["kl_toplam"]) for r in rows) / sum(int(r["token"]) for r in rows)
+
     for mi, (d, _name) in enumerate(models):
-        main = {
-            (r["varyant"], r["dil"]): float(r["kld_mean"]) for r in read_csv(QUANT / d / "flores/kld.csv")
-        }
-        seeds = {
-            (r["varyant"], r["dil"]): float(r["kld_mean"])
-            for r in read_csv(QUANT / d / "flores-tohum/kld.csv")
-        }
         samples = [
-            [main[("Q4_K_M-none", "tr")]],
-            [main[("Q4_K_M-en", "tr")]] + [seeds[(f"Q4_K_M-en-s{s}", "tr")] for s in (1, 2, 3)],
-            [main[("Q4_K_M-tr", "tr")]] + [seeds[(f"Q4_K_M-tr-s{s}", "tr")] for s in (1, 2, 3)],
+            [doc_kld(d, "Q4_K_M-none")],
+            [doc_kld(d, "Q4_K_M-en")] + [doc_kld(d, f"Q4_K_M-en-s{s}") for s in (1, 2, 3)],
+            [doc_kld(d, "Q4_K_M-tr")] + [doc_kld(d, f"Q4_K_M-tr-s{s}") for s in (1, 2, 3)],
         ]
         for gi, vals in enumerate(samples):
             xc = mi + (gi - 1) * w

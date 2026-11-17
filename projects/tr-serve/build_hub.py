@@ -8,12 +8,13 @@ Metin içermez: FLORES+ ve Vikipedi cümleleri, istemler ve model çıktıları 
 
 import csv
 import json
+import math
 import re
 from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.parquet as pq
-from runs import checkpoint_weights, run_group, served_repo
+from runs import MODELS, checkpoint_weights, run_group, served_repo
 
 REPO = Path(__file__).resolve().parents[2]
 SERVE = REPO / "projects/tr-serve/results/serve-v3"
@@ -26,6 +27,21 @@ RUN = re.compile(r"^(tr|en)_c(\d+)_r(\d+)\.json$")
 SCALED = (REPO / "projects/tr-serve/results/olcekli", REPO / "projects/tr-serve/results/olcekli-2")
 SCALED_RUN = re.compile(r"^(tr|en)(-o\d+)?_c(\d+)_r(\d+)\.json$")
 IN_TABLE = {"turkish-gemma-9b-t1", "gemma-4-12b-it", "ministral-3-14b-bf16", "qwen3.8-27b"}
+# 16-17 Kasım takip ölçümleri: koşu başına özet (istek başına listeler atılmış), dizin = oturum
+TAKIP = REPO / "projects/tr-serve/results/takip-2026-11-17"
+FOLLOWUP = {
+    "takip": ("main", TAKIP / "kosu/takip"),
+    "takip-tek": ("main", TAKIP / "kosu/takip-tek"),
+    "takip-istemci": ("main", TAKIP / "kosu/takip-istemci"),
+    "takip-ek": ("main", TAKIP / "kosu/takip-ek"),
+    "takip-ek2": ("main", TAKIP / "kosu/takip-ek2"),
+    "takip-ek3": ("main", TAKIP / "kosu/takip-ek3"),
+    "tp2ara": ("main", REPO / "projects/tr-serve/results/tekrar-2026-11-17/kosu/tp2ara"),
+    "yedek": ("second", REPO / "projects/tr-serve/results/tekrar-2026-11-17/kosu/yedek"),
+}
+FOLLOWUP_RUN = re.compile(r"^(?P<set>.+?)(?:-o(?P<out>\d+))?_c(?P<c>\d+)_r(?P<r>\d+)\.json$")
+DOC_KLD = REPO / "projects/tr-quant/results/belge-kld"
+BELEBELE_GGUF = REPO / "projects/tr-quant/results/belebele-gguf"
 # fp8_quality.py etiketleri -> veri kümesi etiketleri
 LABELS = {"fp8": "fp8_dynamic", "fp8-yerel": "fp8_vendor", "bf16b": "bf16_repeat"}
 GGUF_REPOS = {
@@ -105,40 +121,142 @@ def tokens() -> None:
     write("token_ratio.parquet", rows)
 
 
-def fp8() -> None:
+def model_of(name: str) -> str:
+    """Takip ölçümlerinin dizin adları (ör. qwen3.8-27b-uzun-kv) için vLLM'in yüklediği repo."""
+    prefix = max((p for p in MODELS if name.startswith(p)), key=len)
+    return MODELS[prefix][1]
+
+
+def followup_experiment(session: str, name: str) -> str:
+    rules = (
+        ("-acik-icerik", "open_loop_content_matched"),
+        ("-acik", "open_loop"),
+        ("-uzun-esit", "long_input_equal_tokens"),
+        ("-uzun-kv", "long_input_kv_saturation"),
+        ("-uzun", "long_input"),
+        ("-olcekli", "scaled_output"),
+        ("-tp2-ara", "tensor_parallel_points"),
+        ("-tp", "tensor_parallel_points"),
+        ("-dogal", "natural_stop"),
+        ("-t0", "temperature_0"),
+        ("-tek", "control_alone"),
+    )
+    if session == "takip-istemci":
+        return "client_cpu"
+    if name == "kumru-2b-uzun":  # ana kampanyadaki 4 kat istemli Kumru koşusunun tekrarı, uzun girdi değil
+        return "replication"
+    for suffix, exp in rules:
+        if suffix in name:
+            return exp
+    return "replication" if session == "yedek" else "alone" if session == "takip-tek" else "other"
+
+
+def followup() -> None:
     rows = []
-    for p in sorted(FP8.glob("*/ozet_*.json")):
-        if p.parent.name.startswith("_"):
-            continue
-        r = json.loads(p.read_text(encoding="utf-8"))
-        pair_path = p.with_name(p.name.replace("ozet_", "eslesik_"))
-        pair = json.loads(pair_path.read_text(encoding="utf-8")) if pair_path.exists() else {}
-        for lang in ("tr", "en"):
-            x = r[lang]
-            rows.append(
-                {
-                    "model": served_repo(p.parent.name),
-                    "comparison": f"{r['base']} vs {LABELS.get(r['other'], r['other'])}",
-                    "lang": lang,
-                    "tokens": x["token"],
-                    "chunks": x["parca"],
-                    "ppl_base": round(x["ppl_base"], 4),
-                    "ppl_other": round(x["ppl_other"], 4),
-                    "ppl_ratio": round(x["ppl_oran"], 6),
-                    "ppl_ratio_ci95_low": round(x["ppl_oran_ci95"][0], 6),
-                    "ppl_ratio_ci95_high": round(x["ppl_oran_ci95"][1], 6),
-                    "top1_agreement": round(x["top1_uyum"], 6),
-                    "paired_tr_minus_en": round(pair["fark_tr_eksi_en"], 6) if pair else "",
-                    "paired_ci95_low": round(pair["ci95"][0], 6) if pair else "",
-                    "paired_ci95_high": round(pair["ci95"][1], 6) if pair else "",
-                    # aynı içerikte Türkçe ek log-kaybının İngilizceye oranı; iki dil için aynı değer
-                    "content_extra_loss_ratio_tr_en": round(pair["icerik_basina_ek_kayip_tr_en"], 4)
-                    if pair
-                    else "",
-                    "content_ratio_ci95_low": round(pair["icerik_ci95"][0], 4) if pair else "",
-                    "content_ratio_ci95_high": round(pair["icerik_ci95"][1], 4) if pair else "",
-                }
+    for session, (machine, root) in FOLLOWUP.items():
+        for d in sorted(p for p in root.iterdir() if p.is_dir()):
+            env = (
+                json.loads((d / "ortam.json").read_text(encoding="utf-8"))
+                if (d / "ortam.json").exists()
+                else {}
             )
+            for f in sorted(d.glob("*.json")):
+                m = FOLLOWUP_RUN.match(f.name)
+                if not m:
+                    continue
+                r = json.loads(f.read_text(encoding="utf-8"))
+                rate = r.get("request_rate")
+                rows.append(
+                    {
+                        "session": session,
+                        "machine": machine,
+                        "config": d.name,
+                        "experiment": followup_experiment(session, d.name),
+                        "model": model_of(d.name),
+                        "dynamic_quantization": "fp8"
+                        if "--quantization fp8" in env.get("extra_args", "")
+                        else "",
+                        "tensor_parallel": env.get("tp"),
+                        "gpus": env.get("gpus"),
+                        "cpuset": env.get("cpuset"),
+                        "client_cpuset": env.get("client_cpuset", ""),
+                        "prompt_set": m["set"],
+                        "lang": "en" if m["set"].startswith("en") else "tr",
+                        "output_tokens_per_request": r["total_output_tokens"] // max(r["completed"], 1),
+                        "request_rate": None
+                        if rate in (None, "inf") or rate == float("inf")
+                        else float(rate),
+                        "concurrency": int(m["c"]),
+                        "run": int(m["r"]),
+                        "num_prompts": r["num_prompts"],
+                        "completed": r["completed"],
+                        "failed": r["failed"],
+                        "total_input_tokens": r["total_input_tokens"],
+                        "total_output_tokens": r["total_output_tokens"],
+                        "duration_s": round(r["duration"], 3),
+                        "output_tokens_per_s": round(r["output_throughput"], 2),
+                        "requests_per_s": round(r["request_throughput"], 4),
+                        "ttft_p50_ms": round(r["median_ttft_ms"], 2),
+                        "ttft_p99_ms": round(r["p99_ttft_ms"], 2),
+                        "tpot_p50_ms": round(r["median_tpot_ms"], 3),
+                        "tpot_p99_ms": round(r["p99_tpot_ms"], 3),
+                        "e2e_p50_ms": round(r["median_e2el_ms"], 1) if r.get("median_e2el_ms") else None,
+                        "e2e_p99_ms": round(r["p99_e2el_ms"], 1) if r.get("p99_e2el_ms") else None,
+                        "end_time_local": r["date"],
+                    }
+                )
+    write("serving_followup.parquet", rows)
+
+
+def fp8_rows(path: Path, unit: str, session: str) -> list[dict]:
+    r = json.loads(path.read_text(encoding="utf-8"))
+    pair_path = path.with_name(path.name.replace("ozet_", "eslesik_"))
+    pair = json.loads(pair_path.read_text(encoding="utf-8")) if pair_path.exists() else {}
+    out = []
+    for lang in ("tr", "en"):
+        x = r[lang]
+        out.append(
+            {
+                "model": served_repo(path.parent.name),
+                "comparison": f"{r['base']} vs {LABELS.get(r['other'], r['other'])}",
+                "unit": unit,
+                "session": session,
+                "lang": lang,
+                "tokens": x["token"],
+                "units": x["parca"],
+                # Gemma 4'te vLLM düz metin log-olasılıkları makul değil (BF16 PPL yüzlerce)
+                "base_ppl_plausible": x["ppl_base"] < 100,
+                "ppl_base": round(x["ppl_base"], 4),
+                "ppl_other": round(x["ppl_other"], 4),
+                "ppl_ratio": round(x["ppl_oran"], 6),
+                "ppl_ratio_ci95_low": round(x["ppl_oran_ci95"][0], 6),
+                "ppl_ratio_ci95_high": round(x["ppl_oran_ci95"][1], 6),
+                "top1_agreement": round(x["top1_uyum"], 6),
+                "paired_tr_minus_en": round(pair["fark_tr_eksi_en"], 6) if pair else "",
+                "paired_ci95_low": round(pair["ci95"][0], 6) if pair else "",
+                "paired_ci95_high": round(pair["ci95"][1], 6) if pair else "",
+                "content_extra_loss_ratio_tr_en": round(pair["icerik_basina_ek_kayip_tr_en"], 4)
+                if pair
+                else "",
+                "content_ratio_ci95_low": round(pair["icerik_ci95"][0], 4) if pair else "",
+                "content_ratio_ci95_high": round(pair["icerik_ci95"][1], 4) if pair else "",
+            }
+        )
+    return out
+
+
+def fp8() -> None:
+    """Parça (20 cümle, 5 Kasım ve 17 Kasım tekrarı) ve belge (562 belge, 17 Kasım) düzeyinde FP8 kalitesi."""
+    rows = []
+    sources = (
+        (FP8, "chunk_20_sentences", "2026-11-05"),
+        (TAKIP / "fp8-kalite-parca-tekrar", "chunk_20_sentences", "2026-11-17"),
+        (TAKIP / "fp8-kalite-belge", "document", "2026-11-17"),
+    )
+    for root, unit, session in sources:
+        for p in sorted(root.glob("*/ozet_*.json")):
+            if not p.parent.name.startswith("_"):
+                rows += fp8_rows(p, unit, session)
     write("fp8_quality.parquet", rows)
 
 
@@ -227,9 +345,177 @@ def scaled() -> None:
     write("serving_scaled.parquet", rows)
 
 
+def variant_parts(variant: str) -> tuple[str, str, int | None]:
+    quant, lang, seed = re.fullmatch(r"(\w+?)(?:-(tr|en|none))?(?:-s(\d+))?", variant).groups()
+    imatrix = lang if lang in ("tr", "en") else "none"
+    return quant, imatrix, None if imatrix == "none" else int(seed or 42)
+
+
+def gguf_doc() -> None:
+    """Belge düzeyinde KL (doc_kld.cpp): 562 FLORES+ belgesi, her belge kendi bağlamıyla, bütün token'lar."""
+    rows = []
+    for name, repo in GGUF_REPOS.items():
+        for path in sorted((DOC_KLD / name).glob("*_*.csv")):
+            lang, variant = path.stem.split("_", 1)
+            with path.open(encoding="utf-8") as fh:
+                docs = list(csv.DictReader(fh))
+            tok = sum(int(d["token"]) for d in docs)
+            nll_b = sum(float(d["nll_taban"]) for d in docs)
+            nll_q = sum(float(d["nll_varyant"]) for d in docs)
+            quant, imatrix, seed = variant_parts(variant)
+            rows.append(
+                {
+                    "model": repo,
+                    "eval_lang": lang,
+                    "quant": quant,
+                    "imatrix_lang": imatrix,
+                    "calibration_seed": seed,
+                    "documents": len(docs),
+                    "tokens": tok,
+                    "kld_sum": round(sum(float(d["kl_toplam"]) for d in docs), 4),
+                    "kld_mean": sum(float(d["kl_toplam"]) for d in docs) / tok,
+                    "same_top_token": sum(int(d["ayni_top1"]) for d in docs) / tok,
+                    "ppl_bf16": round(math.exp(nll_b / tok), 4),
+                    "ppl_quant": round(math.exp(nll_q / tok), 4),
+                }
+            )
+    write("gguf_kld_doc.parquet", rows)
+
+
+def belebele() -> None:
+    """Belebele (facebook/belebele @7899cdf, 900 paralel soru): vLLM'de BF16 ve FP8, llama.cpp'de GGUF."""
+    rows = []
+
+    def add(engine, model, method, base, variant, lang, acc_b, acc_v, d, d_ci, t, t_ci, valid):
+        quant, imatrix, _ = variant_parts(variant) if engine == "llama.cpp" else (None, None, None)
+        rows.append(
+            {
+                "engine": engine,
+                "model": model,
+                "method": method,
+                "base": base,
+                "variant": variant,
+                "quant": quant,
+                "imatrix_lang": imatrix,
+                "lang": lang,
+                "questions": 900,
+                "accuracy_base": round(acc_b, 6),
+                "accuracy_variant": round(acc_v, 6),
+                "delta_points": round(d, 4),
+                "delta_ci95_low": round(d_ci[0], 4),
+                "delta_ci95_high": round(d_ci[1], 4),
+                "tr_minus_en_points": round(t, 4),
+                "tr_minus_en_ci95_low": round(t_ci[0], 4),
+                "tr_minus_en_ci95_high": round(t_ci[1], 4),
+                # BF16 doğruluğu bir dilde 0,5'in altındaysa yöntem o modelde geçersiz (konum yanlılığı ya da
+                # düşünme bloğu); satır kalır, karşılaştırmaya girmez
+                "valid": valid,
+            }
+        )
+
+    for path in sorted((TAKIP / "belebele-fp8").glob("*/belebele_fp8*.json")):
+        r = json.loads(path.read_text(encoding="utf-8"))
+        method = "chat" if path.stem.endswith("-chat") else "plain"
+        valid = min(r["tr"]["dogruluk_base"], r["en"]["dogruluk_base"]) >= 0.5
+        for lang in ("tr", "en"):
+            x = r[lang]
+            add(
+                "vllm",
+                served_repo(path.parent.name),
+                method,
+                "bf16",
+                "fp8_dynamic",
+                lang,
+                x["dogruluk_base"],
+                x["dogruluk_other"],
+                x["fark_puan"],
+                r[f"{lang}_fark_ci95"],
+                r["tr_eksi_en_puan"],
+                r["tr_eksi_en_ci95"],
+                valid,
+            )
+    for name, repo in GGUF_REPOS.items():
+        path = BELEBELE_GGUF / name / "ozet.json"
+        if not path.exists():
+            continue
+        r = json.loads(path.read_text(encoding="utf-8"))
+        acc, base = r["dogruluk"], r["dogruluk"]["bf16"]
+        valid = min(base.values()) >= 0.5
+        for variant, d in r["bf16_farki"].items():
+            for lang in ("tr", "en"):
+                add(
+                    "llama.cpp",
+                    repo,
+                    "plain",
+                    "bf16_gguf",
+                    variant,
+                    lang,
+                    base[lang],
+                    acc[variant][lang],
+                    d[lang]["puan"],
+                    d[lang]["ci95"],
+                    d["tr_eksi_en"]["puan"],
+                    d["tr_eksi_en"]["ci95"],
+                    valid,
+                )
+    write("belebele.parquet", rows)
+
+
+def natural_text() -> None:
+    """Vikipedi ve web metninde token/kelime (dogal_metin_tpw.py), FLORES+ değeriyle karşılaştırmalı."""
+    with (REPO / "projects/tr-serve/results/dogal_metin_tpw.csv").open(encoding="utf-8") as fh:
+        src = list(csv.DictReader(fh))
+    rows = [
+        {
+            "tokenizer_repo": r["model"],
+            "corpus": r["derlem"],
+            "lang": r["dil"],
+            "documents": int(r["belge"]),
+            "words": int(r["kelime"]),
+            "tokens": int(r["token"]),
+            "tokens_per_word": float(r["token_kelime"]),
+            "flores_tokens_per_word": float(r["flores_token_kelime"]),
+            "ratio_to_flores": float(r["dogal_flores_orani"]),
+        }
+        for r in src
+    ]
+    write("natural_text_tokens.parquet", rows)
+
+
+def natural_stop() -> None:
+    """Doğal bitiş (dogal_cevap.py): düşünme kapalı, en fazla 3.500 token, 562 istem, iki tohum."""
+    rows = []
+    for path in sorted((TAKIP / "dogal").glob("*/ozet.json")):
+        name = path.parent.name
+        for key, x in json.loads(path.read_text(encoding="utf-8")).items():
+            lang, seed = key.split("_s")
+            rows.append(
+                {
+                    "model": model_of(name),
+                    "weights": "fp8_dynamic" if "-fp8" in name else "bf16",
+                    "temperature": 0.15 if name.endswith("-t015") else None,
+                    "lang": lang,
+                    "seed": int(seed),
+                    "requests": x["istek"],
+                    "errors": x["hata"],
+                    "hit_length_limit": x["sinira_dayanan"],
+                    "tokens_per_word": x["token_kelime"],
+                    "flores_tokens_per_word": x["flores_token_kelime"],
+                    "diff_vs_flores_pct": x["fark_yuzde"],
+                    "median_answer_tokens": x["cevap_token_medyan"],
+                }
+            )
+    write("natural_stop.parquet", rows)
+
+
 if __name__ == "__main__":
     serving()
     tokens()
     fp8()
     gguf()
     scaled()
+    followup()
+    gguf_doc()
+    belebele()
+    natural_text()
+    natural_stop()

@@ -1,0 +1,42 @@
+{
+ "base": "bf16",
+ "other": "bf16b",
+ "bootstrap": 2000,
+ "birim": "belge (562)",
+ "tr": {
+  "ppl_oran": 1.0,
+  "top1_uyum": 1.0,
+  "ppl_base": 18.5459312341348,
+  "ppl_other": 18.5459312341348,
+  "ort_mutlak_logprob_farki": 0.0,
+  "ek_nll_toplam": 0.0,
+  "ppl_oran_ci95": [
+   1.0,
+   1.0
+  ],
+  "top1_uyum_ci95": [
+   1.0,
+   1.0
+  ],
+  "token": 73640,
+  "parca": 562
+ },
+ "en": {
+  "ppl_oran": 1.0000001935840013,
+  "top1_uyum": 1.0,
+  "ppl_base": 24.640368641677995,
+  "ppl_other": 24.64037341165915,
+  "ort_mutlak_logprob_farki": 3.6066489490236806e-05,
+  "ek_nll_toplam": 0.010222589349723421,
+  "ppl_oran_ci95": [
+   1.0,
+   1.0000005144664843
+  ],
+  "top1_uyum_ci95": [
+   1.0,
+   1.0
+  ],
+  "token": 52807,
+  "parca": 562
+ }
+}

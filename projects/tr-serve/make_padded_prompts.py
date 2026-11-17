@@ -1,10 +1,11 @@
 """Türkçe istemle aynı token sayısına doldurulmuş İngilizce istemler (Gemma'da kalan yük çarpanının sınaması).
 
-Kullanım: python make_padded_prompts.py PROMPTS_DIZINI AD=TOKENIZER.json [AD=TOKENIZER.json ...]
+Kullanım: python make_padded_prompts.py PROMPTS_DIZINI [--kume=long] AD=TOKENIZER.json [AD=TOKENIZER.json ...]
 Her belge için İngilizce istemin sonuna sonraki belgelerin İngilizce metni eklenir ve token düzeyinde
 Türkçe istemin token sayısına (aynı tokenizer, özel token'sız) kesilir. Sıra prompts_en.jsonl ile aynı;
 vLLM istemcisinin sabit tohumlu tamamlaması bu yüzden aynı belgeleri seçer.
-Çıktı: prompts_enpad-AD.jsonl. Her model için eşleşme ve en uzun istem yazdırılır.
+Çıktı: prompts_enpad-AD.jsonl (--kume=long ile prompts_trlong/enlong'dan prompts_enlongpad-AD.jsonl).
+Her model için eşleşme ve en uzun istem yazdırılır.
 """
 
 import json
@@ -32,9 +33,11 @@ def fit(tok: Tokenizer, base: str, filler: str, target: int) -> str:
 
 def main() -> int:
     root = Path(sys.argv[1])
-    tr, en = read(root / "prompts_tr.jsonl"), read(root / "prompts_en.jsonl")
+    rest = sys.argv[2:]
+    kume = next((a.split("=", 1)[1] for a in rest if a.startswith("--kume=")), "")
+    tr, en = read(root / f"prompts_tr{kume}.jsonl"), read(root / f"prompts_en{kume}.jsonl")
     assert len(tr) == len(en)
-    for arg in sys.argv[2:]:
+    for arg in (a for a in rest if not a.startswith("--kume=")):
         name, path = arg.split("=", 1)
         tok = Tokenizer.from_file(path)
         out, diffs, tr_lens = [], [], []
@@ -49,7 +52,7 @@ def main() -> int:
             diffs.append(len(tok.encode(text, add_special_tokens=False).ids) - target)
             tr_lens.append(target)
             out.append(json.dumps({"prompt": text}, ensure_ascii=False))
-        (root / f"prompts_enpad-{name}.jsonl").write_text("\n".join(out) + "\n", encoding="utf-8")
+        (root / f"prompts_en{kume}pad-{name}.jsonl").write_text("\n".join(out) + "\n", encoding="utf-8")
         exact = sum(d == 0 for d in diffs)
         longer = sum(d > 0 for d in diffs)
         print(

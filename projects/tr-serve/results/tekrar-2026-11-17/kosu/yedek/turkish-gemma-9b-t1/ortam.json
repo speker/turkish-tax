@@ -1,0 +1,7 @@
+{"name": "turkish-gemma-9b-t1", "base_image": "vllm/vllm-openai@sha256:d825baf9ce4b1b6bfc5ecc7b79880c7e6748c65a72d697ce3d47607aafa84c6e",
+ "image_id": "sha256:420edd8fb7e09ba7a303d42ab26a71695edd365397fce99233c7dff0337a900d", "tp": 1, "gpus": "0",
+ "cpuset": "0-31", "kernel_cmdline": "BOOT_IMAGE=/vmlinuz-6.8.0-139-generic root=/dev/mapper/ubuntu--vg-ubuntu--lv ro quiet splash transparent_hugepage=never vt.handoff=7", "conc": "1:32 16:256 64:1024 256:4096",
+ "diger_mesgul_gpular": "",
+ "extra_args": "--no-enable-prefix-caching", "model_revision": "bc2e3064994eefab3c9043ff58c5b3c7cbfc6c40",
+ "ignore_eos": 1, "request_rate": "inf", "order": "alt", "bench_args": "",
+ "driver": "570.211.01", "output_len": 256, "date": "2026-11-16T18:45:02+00:00"}

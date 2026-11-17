@@ -5,7 +5,7 @@ set -u
 WORK=$HOME/work/tr-serve
 IMAGE=tr-serve-vllm:0.33.0-bench
 TEXT=$HOME/work/tr-quant/text
-OUT=$WORK/results/fp8-kalite
+OUT=${OUT:-$WORK/results/fp8-kalite}
 TG=$HOME/work/tr-quant/models/turkish-gemma-9b-t1/hf
 log() { printf '[%s] %s\n' "$(date +%T)" "$*"; }
 
@@ -46,10 +46,23 @@ pair() {
   compare "$name" bf16 fp8
 }
 
-# ONLY=gemma-4-12b-it: yalnız o modeli koşar
+# ONLY=gemma-4-12b-it: yalnız o modeli koşar. Tekrar için: OUT=... LEASE_GPUS=0,1 ONLY=turkish-gemma-9b-t1
+# (BF16 ve FP8 ayrı GPU'larda aynı anda)
 if [ -n "${ONLY:-}" ]; then
   case $ONLY in
     gemma-4-12b-it) pair gemma-4-12b-it "$HOME/models/gemma-4-12b-it" 3 120-143 --add-bos ;;
+    turkish-gemma-9b-t1)
+      g1=${LEASE_GPUS%%,*} g2=${LEASE_GPUS##*,}
+      run turkish-gemma-9b-t1 "$TG" bf16 "$g1" 0-23 &
+      run turkish-gemma-9b-t1 "$TG" fp8 "$g2" 24-47 --quantization fp8 &
+      wait
+      run turkish-gemma-9b-t1 "$TG" bf16b "$g1" 0-23
+      compare turkish-gemma-9b-t1 bf16 fp8
+      compare turkish-gemma-9b-t1 bf16 bf16b
+      sudo docker run --rm --entrypoint python3 -v "$OUT/turkish-gemma-9b-t1:/out" -v "$WORK:/work:ro" "$IMAGE" \
+        /work/fp8_quality.py paired --dir /out --base bf16 --other fp8 >"$OUT/turkish-gemma-9b-t1/paired_fp8.log" 2>&1 ||
+        log "HATA paired turkish-gemma-9b-t1 fp8"
+      ;;
     *) log "bilinmeyen ONLY=$ONLY" ;;
   esac
   ~/bin/lease release "$id" && log "kiralama bırakıldı: $id"

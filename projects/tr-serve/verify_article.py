@@ -627,12 +627,596 @@ def scaled_claims() -> list[tuple]:
     return c
 
 
+FU = REPO / "projects/tr-serve/results/takip-2026-11-17"
+TEKRAR = REPO / "projects/tr-serve/results/tekrar-2026-11-17"
+DOC = QUANT / "belge-kld"
+
+
+def jtp(path: Path, field: str = "output_throughput") -> float:
+    return json.loads(path.read_text(encoding="utf-8"))[field]
+
+
+def paired(dirs: list[Path], tr: str, en: str, conc: int, scale: float) -> list[float]:
+    """Aynı tekrarın Türkçe ve İngilizce koşusundan aynı içerik maliyeti: scale × EN hız ÷ TR hız.
+
+    scale: çıktılar eşit uzunluktaysa TR/EN token oranı, Türkçe çıktı içerikle uzatıldıysa
+    çıktı uzunluklarının oranı.
+    """
+    out = []
+    for d in dirs:
+        for f in sorted(d.glob(f"{en}_c{conc}_r*.json")):
+            t = d / f.name.replace(f"{en}_", f"{tr}_", 1)
+            if t.exists():
+                out.append(scale * jtp(f) / jtp(t))
+    return out
+
+
+def doc_kl(model: str, lang: str, variant: str, root: Path = DOC) -> float:
+    rows = load_csv(root / model / f"{lang}_{variant}.csv")
+    return sum(float(r["kl_toplam"]) for r in rows) / sum(int(r["token"]) for r in rows)
+
+
+def doc_summary(model: str, variant: str) -> dict:
+    """doc_kld_summary.py çıktısı (ozet.txt): token ve içerik başına TR/EN oranı ve bootstrap aralıkları."""
+    pat = re.compile(
+        rf"^\s+{re.escape(variant)}\s+KL TR [\d.]+ EN [\d.]+ \| "
+        r"token başına TR/EN ([\d.]+) \(([\d.]+)–([\d.]+)\) \| içerik başına ([\d.]+) \(([\d.]+)–([\d.]+)\)"
+    )
+    for line in (DOC / model / "ozet.txt").read_text(encoding="utf-8").splitlines():
+        m = pat.match(line)
+        if m:
+            return dict(
+                zip(
+                    ("tok", "tok_lo", "tok_hi", "con", "con_lo", "con_hi"),
+                    map(float, m.groups()),
+                    strict=True,
+                )
+            )
+    raise KeyError(f"{model} {variant}")
+
+
+def kv_max(path: Path, conc: int) -> float:
+    """kv.log'da koşan + bekleyen istek ≈ conc olan satırlarda en yüksek KV doluluğu."""
+    pat = r"Running: (\d+) reqs, Waiting: (\d+) reqs, GPU KV cache usage: ([\d.]+)%"
+    stats = [(int(r), int(w), float(k)) for r, w, k in re.findall(pat, path.read_text(encoding="utf-8"))]
+    return max(k for r, w, k in stats if conc * 0.9 <= r + w <= conc)
+
+
+def followup_claims(root: Path) -> list[tuple]:
+    """16-17 Kasım takip ölçümlerine dayanan iddialar (makalenin 17 Kasım güncellemesi)."""
+    c = []
+    with (root / "ozet.csv").open(encoding="utf-8") as fh:
+        o = {(r["model"], r["dtype"], r["dil"], int(r["eszamanlilik"])): r for r in csv.DictReader(fh)}
+    repo = {
+        TG: "ytu-ce-cosmos/Turkish-Gemma-9b-T1",
+        "gemma-4-12b-it": "google/gemma-4-12B-it",
+        MI: "mistralai/Ministral-3-14B-Instruct-2512",
+        QW: "Qwen/Qwen3.8-27B",
+    }
+    rho = {m: tokens(r, "tr_en_orani") for m, r in repo.items()}
+    tpw = {m: tokens(r, "tr_token_kelime") for m, r in repo.items()}
+    kosu = FU / "kosu"
+    # Ministral: tek başına beş koşu (tablo satırı), ana kampanyanın iki koşusu, ikinci makinenin beş koşusu
+    solo = kosu / "takip-tek" / MI
+    tr_s = statistics.median(jtp(f) for f in solo.glob("tr_c256_r*.json"))
+    en_s = statistics.median(jtp(f) for f in solo.glob("en_c256_r*.json"))
+    cost_mi = rho[MI] * en_s / tr_s
+    c += [
+        ("Ministral tek başına TR tok/s", 10181, tr_s, 0.5),
+        ("Ministral tek başına EN tok/s", 11334, en_s, 0.5),
+        ("Ministral tek başına TR/EN", 1.65, cost_mi, 0.005),
+        ("Ministral tek başına GPU-h", 0.064, 1e6 * tpw[MI] / tr_s / 3600, 0.0005),
+    ]
+    main_mi = paired([root / MI], "tr", "en", 256, rho[MI])
+    later = paired([TEKRAR / "kosu/yedek" / MI, solo], "tr", "en", 256, rho[MI])
+    c += [
+        ("Ministral ana koşu düşük", 1.575, min(main_mi), 0.0005),
+        ("Ministral ana koşu yüksek", 1.665, max(main_mi), 0.0005),
+        ("Ministral sonraki on koşu sayısı", 10, len(later), 0),
+        ("Ministral sonraki on koşu en düşük", 1.647, min(later), 0.0005),
+        ("Ministral sonraki on koşu en yüksek", 1.663, max(later), 0.0005),
+        ("Ministral on iki koşu medyanı", 1.65, statistics.median(main_mi + later), 0.005),
+    ]
+    spreads = [
+        float(o[(m, "bf16", lang, 256)]["kosu_farki_yuzde"])
+        for m in (TG, "gemma-4-12b-it", QW)
+        for lang in ("tr", "en")
+    ]
+    for lang in ("tr", "en"):
+        v = [jtp(f) for f in solo.glob(f"{lang}_c256_r*.json")]
+        spreads.append((max(v) - min(v)) / statistics.median(v) * 100)
+    c.append(("tablo koşu farkı en fazla % (güncel)", 0.98, max(spreads), 0.005))
+    costs = {m: float(o[(m, "bf16", "tr", 256)]["tr_en_maliyet"]) for m in (TG, "gemma-4-12b-it", QW)} | {
+        MI: cost_mi
+    }
+    c += [("TR/EN 256 en düşük (güncel)", 1.45, min(costs.values()), 0.005)]
+    c += [("TR/EN 256 en yüksek (güncel)", 1.65, max(costs.values()), 0.005)]
+    gaps = [
+        1 - float(o[(m, "bf16", "tr", 256)]["cikti_tok_s"]) / float(o[(m, "bf16", "en", 256)]["cikti_tok_s"])
+        for m in (TG, "gemma-4-12b-it", QW)
+    ]
+    gaps.append(1 - tr_s / en_s)
+    c += [
+        ("TR hız farkı en az % (güncel)", 6.2, min(gaps) * 100, 0.05),
+        ("TR hız farkı en çok %", 10.2, max(gaps) * 100, 0.05),
+    ]
+    shares = [(rho[m] - 1) / (costs[m] - 1) * 100 for m in costs]
+    c += [
+        ("token payı en düşük % (güncel)", 74, min(shares), 0.5),
+        ("token payı en yüksek % (güncel)", 82, max(shares), 0.5),
+    ]
+    allc = [
+        float(o[(m, "bf16", "tr", conc)]["tr_en_maliyet"])
+        for m in (TG, "gemma-4-12b-it", QW, MI)
+        for conc in (1, 16, 64)
+    ]
+    allc += list(costs.values())
+    c += [
+        ("TR/EN 1-256 en düşük", 1.37, min(allc), 0.005),
+        ("TR/EN 1-256 en yüksek (güncel)", 1.65, max(allc), 0.005),
+    ]
+    # dolgulu istem (9 Kasım): Türkçe uzunluğa doldurulmuş İngilizce / Türkçe, aynı çıktı uzunluğu
+    pad = []
+    for d in (REPO / "projects/tr-serve/results/dolgu").iterdir():
+        enpad = [f for f in d.glob("enpad-*_c256_r*.json")]
+        out = re.search(r"-o(\d+)_", enpad[0].name)[1]
+        pad.append(
+            statistics.median(jtp(f) for f in enpad)
+            / statistics.median(jtp(f) for f in d.glob(f"tr-o{out}_c256_r*.json"))
+        )
+    c += [("dolgulu/TR en düşük", 0.992, min(pad), 0.0005), ("dolgulu/TR en yüksek", 1.011, max(pad), 0.0005)]
+    # istemci CPU
+    a, b = kosu / "takip-istemci" / TG, kosu / "takip-istemci" / f"{TG}-ayri"
+    diffs = []
+    for lang in ("tr", "en"):
+        for conc in (64, 256):
+            m1 = statistics.median(jtp(f) for f in a.glob(f"{lang}_c{conc}_r*.json"))
+            m2 = statistics.median(jtp(f) for f in b.glob(f"{lang}_c{conc}_r*.json"))
+            diffs.append(abs(m2 / m1 - 1) * 100)
+    c.append(("istemci ayrı CPU en fazla %", 0.43, max(diffs), 0.005))
+
+    # TP noktaları (takip, paralel hatlar): medyan TPOT ve GPU-saat
+    def tp_point(tp: int, conc: int) -> tuple[float, float]:
+        d = kosu / "takip" / f"qwen3.8-27b-tp{tp}"
+        t = statistics.median(jtp(f, "median_tpot_ms") for f in d.glob(f"tr_c{conc}_r*.json"))
+        s = statistics.median(jtp(f) for f in d.glob(f"tr_c{conc}_r*.json"))
+        return t, 1e6 * tpw[QW] / s / 3600 * tp
+
+    for label, tp, conc, tpot, gh in (
+        ("4 GPU 128", 4, 128, 12.3, 0.282),
+        ("2 GPU 160", 2, 160, 23.1, 0.209),
+        ("1 GPU 64", 1, 64, 23.1, 0.259),
+        ("4 GPU 256", 4, 256, 21.6, 0.239),
+    ):
+        t, g = tp_point(tp, conc)
+        c += [(f"takip {label} TPOT", tpot, t, 0.05), (f"takip {label} GPU-h", gh, g, 0.0005)]
+    c.append(("takip 2 GPU 96 TPOT (17 ms sınırı)", 17.3, tp_point(2, 96)[0], 0.05))
+    c.append(("takip 1 GPU 96 TPOT (28 ms sınırı)", 27.6, tp_point(1, 96)[0], 0.05))
+    c.append(("1 GPU 256 TPOT (57 ms)", 57.1, float(o[(QW, "bf16", "tr", 256)]["tpot_p50_ms"]), 0.05))
+    d384 = TEKRAR / "kosu/tp2ara/qwen3.8-27b-tp2-ara"
+    gh384 = 1e6 * tpw[QW] / statistics.median(jtp(f) for f in d384.glob("tr_c384_r*.json")) / 3600 * 2
+    c.append(("1 GPU 128, 2 GPU 384'ün %4 içinde", 1, float((tp_point(1, 128)[1] / gh384 - 1) * 100 < 4), 0))
+    tp_costs = []
+    for tp, concs in ((1, (64, 96, 128)), (2, (64, 96, 128, 160)), (4, (64, 96, 128, 256))):
+        for conc in concs:
+            tp_costs.append(
+                statistics.median(paired([kosu / "takip" / f"qwen3.8-27b-tp{tp}"], "tr", "en", conc, rho[QW]))
+            )
+    c += [
+        ("takip TP TR/EN medyan en düşük", 1.47, min(tp_costs), 0.005),
+        ("takip TP TR/EN medyan en yüksek", 1.51, max(tp_costs), 0.005),
+    ]
+    # Kumru İngilizce çok kelimeli token
+    k = json.loads(KUMRU.read_text(encoding="utf-8"))
+    c.append(("Kumru çok kelimeli FLORES EN %", 3.9, k["en_tokenlarin_cok_kelimeli_orani"] * 100, 0.05))
+    # FP8 belge düzeyi
+    belge = FU / "fp8-kalite-belge"
+
+    def fj(m: str, name: str) -> dict:
+        return json.loads((belge / m / name).read_text(encoding="utf-8"))
+
+    tg = fj(TG, "ozet_fp8.json")
+    c += [
+        ("TG belge FP8 TR PPL %", 0.55, (tg["tr"]["ppl_oran"] - 1) * 100, 0.005),
+        ("TG belge FP8 EN PPL %", 0.88, (tg["en"]["ppl_oran"] - 1) * 100, 0.005),
+    ]
+    for m, v, lo, hi in (
+        (TG, 0.87, 0.57, 1.24),
+        (QW, 1.56, 1.10, 2.29),
+        (MI, 1.64, 1.18, 2.37),
+        (KU2, 0.93, 0.67, 1.27),
+    ):
+        e = fj(m, "eslesik_fp8.json")
+        c += [
+            (f"{m} belge içerik TR/EN", v, e["icerik_basina_ek_kayip_tr_en"], 0.005),
+            (f"{m} belge içerik GA alt", lo, e["icerik_ci95"][0], 0.005),
+            (f"{m} belge içerik GA üst", hi, e["icerik_ci95"][1], 0.005),
+        ]
+    c.append(
+        ("Gemma 4 belge BF16 TR PPL", 1792, fj("gemma-4-12b-it", "ozet_fp8.json")["tr"]["ppl_base"], 0.5)
+    )
+    rep = json.loads((FU / "fp8-kalite-parca-tekrar" / TG / "eslesik_fp8.json").read_text(encoding="utf-8"))
+    orig = json.loads((FP8 / TG / "eslesik_fp8.json").read_text(encoding="utf-8"))
+    same = all(
+        rep[k] == orig[k] for k in ("fark_tr_eksi_en", "ci95", "icerik_basina_ek_kayip_tr_en", "icerik_ci95")
+    )
+    c.append(("TG parça tekrarı bit düzeyinde aynı", 1, float(same), 0))
+    # Belebele, vLLM BF16 ve FP8
+    bb = []
+    for p in (FU / "belebele-fp8").glob("*/belebele_fp8*.json"):
+        r = json.loads(p.read_text(encoding="utf-8"))
+        bb.append(
+            (
+                p.parent.name,
+                p.stem.endswith("-chat"),
+                r,
+                min(r["tr"]["dogruluk_base"], r["en"]["dogruluk_base"]) >= 0.5,
+            )
+        )
+    valid = [x for x in bb if x[3]]
+    c += [
+        ("Belebele geçerli model sayısı", 4, len({x[0] for x in valid}), 0),
+        (
+            "Belebele FP8 en büyük |fark| puan",
+            1.1,
+            max(abs(x[2][lang]["fark_puan"]) for x in valid for lang in ("tr", "en")),
+            0.05,
+        ),
+        ("Belebele TR-EN GA üst en büyük", 2.4, max(x[2]["tr_eksi_en_ci95"][1] for x in valid), 0.05),
+        (
+            "Gemma 4 düz metin EN doğruluk",
+            0.28,
+            next(x[2]["en"]["dogruluk_base"] for x in bb if x[0] == "gemma-4-12b-it" and not x[1]),
+            0.005,
+        ),
+    ]
+    # GGUF belge düzeyi
+    for model, tok, tlo, thi, con, clo, chi in (
+        ("turkish-gemma-9b-t1", 1.49, 1.45, 1.54, 2.08, 2.02, 2.14),
+        ("trendyol-llm-8b-t1", 1.39, 1.35, 1.44, 2.26, 2.18, 2.33),
+    ):
+        s = doc_summary(model, "Q4_K_M-none")
+        for name, v in (
+            ("tok", tok),
+            ("tok_lo", tlo),
+            ("tok_hi", thi),
+            ("con", con),
+            ("con_lo", clo),
+            ("con_hi", chi),
+        ):
+            c.append((f"{model} belge KL {name}", v, s[name], 0.005))
+    ku = doc_summary("kumru-2b", "Q4_K_M-none")
+    c += [
+        ("Kumru belge KL token başına", 1.18, ku["tok"], 0.005),
+        ("Kumru belge KL içerik başına", 0.75, ku["con"], 0.005),
+    ]
+    cpu = QUANT / "belge-kld-cpu"
+    back = []
+    for f in (cpu / "kumru-2b").glob("*.csv"):
+        lang, variant = f.stem.split("_", 1)
+        if variant.startswith(("Q4_K_M", "IQ4_XS")):
+            back.append(
+                abs(doc_kl("kumru-2b", lang, variant) / doc_kl("kumru-2b", lang, variant, cpu) - 1) * 100
+            )
+    c.append(("CPU/GPU K-quant farkı en fazla %", 8.5, max(back), 0.05))
+
+    def seeds_doc(model: str, imx: str, quant: str = "Q4_K_M", lang: str = "tr") -> list[float]:
+        return [doc_kl(model, lang, f"{quant}-{imx}{s}") for s in ("", "-s1", "-s2", "-s3")]
+
+    tg_tr, tg_en = seeds_doc("turkish-gemma-9b-t1", "tr"), seeds_doc("turkish-gemma-9b-t1", "en")
+    ty_tr, ty_en = seeds_doc("trendyol-llm-8b-t1", "tr"), seeds_doc("trendyol-llm-8b-t1", "en")
+    tg_none = doc_kl("turkish-gemma-9b-t1", "tr", "Q4_K_M-none")
+    c += [
+        ("TG belge matrissiz KL", 0.0515, tg_none, 0.00005),
+        ("TG belge TR matris ort", 0.0343, statistics.mean(tg_tr), 0.00005),
+        ("TG belge matris kazancı %", 33, (1 - statistics.mean(tg_tr) / tg_none) * 100, 0.5),
+        (
+            "Trendyol belge matris kazancı %",
+            44,
+            (1 - statistics.mean(ty_tr) / doc_kl("trendyol-llm-8b-t1", "tr", "Q4_K_M-none")) * 100,
+            0.5,
+        ),
+        (
+            "Kumru belge matris kazancı %",
+            19,
+            (1 - doc_kl("kumru-2b", "tr", "Q4_K_M-tr") / doc_kl("kumru-2b", "tr", "Q4_K_M-none")) * 100,
+            0.5,
+        ),
+        (
+            "TG kalibrasyon dili kazancı %",
+            1.8,
+            (1 - statistics.mean(tg_tr) / statistics.mean(tg_en)) * 100,
+            0.05,
+        ),
+        ("TG TR matris en düşük", 0.0341, min(tg_tr), 0.00005),
+        ("TG TR matris en yüksek", 0.0346, max(tg_tr), 0.00005),
+        ("TG EN matris en düşük", 0.0347, min(tg_en), 0.00005),
+        ("TG EN matris en yüksek", 0.0351, max(tg_en), 0.00005),
+        (
+            "Trendyol kalibrasyon dili kazancı %",
+            8.5,
+            (1 - statistics.mean(ty_tr) / statistics.mean(ty_en)) * 100,
+            0.05,
+        ),
+        ("Trendyol TR matris en düşük", 0.0199, min(ty_tr), 0.00005),
+        ("Trendyol TR matris en yüksek", 0.0201, max(ty_tr), 0.00005),
+        ("Trendyol EN matris en düşük", 0.0217, min(ty_en), 0.00005),
+        ("Trendyol EN matris en yüksek", 0.0220, max(ty_en), 0.00005),
+        (
+            "TR matris dört örneklemin her birinde düşük",
+            1,
+            float(all(t < e for t, e in zip(tg_tr + ty_tr, tg_en + ty_en, strict=True))),
+            0,
+        ),
+        (
+            "örneklem yayılımı en fazla %",
+            1.4,
+            max((max(x) / min(x) - 1) * 100 for x in (tg_tr, tg_en, ty_tr, ty_en)),
+            0.05,
+        ),
+    ]
+    ty3 = {
+        (imx, lang): seeds_doc("trendyol-llm-8b-t1", imx, "IQ3_M", lang)
+        for imx in ("tr", "en")
+        for lang in ("tr", "en")
+    }
+    tg3 = {
+        (imx, lang): seeds_doc("turkish-gemma-9b-t1", imx, "IQ3_M", lang)
+        for imx in ("tr", "en")
+        for lang in ("tr", "en")
+    }
+    per_seed = [(t / e - 1) * 100 for t, e in zip(ty3[("tr", "en")], ty3[("en", "en")], strict=True)]
+    c += [
+        (
+            "Trendyol IQ3_M EN artış ort %",
+            38,
+            (statistics.mean(ty3[("tr", "en")]) / statistics.mean(ty3[("en", "en")]) - 1) * 100,
+            0.5,
+        ),
+        ("Trendyol IQ3_M EN artış en az %", 33, min(per_seed), 0.5),
+        ("Trendyol IQ3_M EN artış en çok %", 43, max(per_seed), 0.5),
+        (
+            "Trendyol IQ3_M TR artış %",
+            5.5,
+            (statistics.mean(ty3[("tr", "tr")]) / statistics.mean(ty3[("en", "tr")]) - 1) * 100,
+            0.05,
+        ),
+        (
+            "TG IQ3_M TR düşüş %",
+            3.9,
+            (1 - statistics.mean(tg3[("tr", "tr")]) / statistics.mean(tg3[("en", "tr")])) * 100,
+            0.05,
+        ),
+        (
+            "TG IQ3_M EN düşüş %",
+            2.6,
+            (1 - statistics.mean(tg3[("tr", "en")]) / statistics.mean(tg3[("en", "en")])) * 100,
+            0.05,
+        ),
+    ]
+    # Belebele, GGUF
+    gg = {
+        m: json.loads((QUANT / "belebele-gguf" / m / "ozet.json").read_text(encoding="utf-8"))
+        for m in ("turkish-gemma-9b-t1", "trendyol-llm-8b-t1")
+    }
+    mild = [v for g in gg.values() for k, v in g["bf16_farki"].items() if not k.startswith("IQ3_M")]
+    ty = gg["trendyol-llm-8b-t1"]
+    c += [
+        (
+            "GGUF Belebele Q8/Q4/IQ4 en büyük |fark|",
+            1.6,
+            max(abs(v[lang]["puan"]) for v in mild for lang in ("tr", "en")),
+            0.05,
+        ),
+        (
+            "GGUF Belebele Q8/Q4/IQ4 TR-EN aralığı sıfırı dışlayan yok",
+            1,
+            float(all(v["tr_eksi_en"]["ci95"][0] < 0 < v["tr_eksi_en"]["ci95"][1] for v in mild)),
+            0,
+        ),
+        ("Trendyol Q4_K_M matrissiz TR kayıp", -1.4, ty["bf16_farki"]["Q4_K_M-none"]["tr"]["puan"], 0.05),
+        ("Trendyol Q4_K_M matrissiz GA alt", -2.8, ty["bf16_farki"]["Q4_K_M-none"]["tr"]["ci95"][0], 0.05),
+        ("Trendyol Q4_K_M matrissiz GA üst", -0.1, ty["bf16_farki"]["Q4_K_M-none"]["tr"]["ci95"][1], 0.05),
+        ("Trendyol Q4_K_M TR matris TR", 0.6, ty["bf16_farki"]["Q4_K_M-tr"]["tr"]["puan"], 0.05),
+        (
+            "Trendyol Q4_K_M TR matris aralığı sıfırı içeriyor",
+            1,
+            float(ty["bf16_farki"]["Q4_K_M-tr"]["tr"]["ci95"][0] < 0),
+            0,
+        ),
+        (
+            "IQ3_M TR düşüş en az",
+            2.7,
+            min(-g["bf16_farki"][v]["tr"]["puan"] for g in gg.values() for v in ("IQ3_M-tr", "IQ3_M-en")),
+            0.05,
+        ),
+        (
+            "IQ3_M TR düşüş en çok",
+            3.7,
+            max(-g["bf16_farki"][v]["tr"]["puan"] for g in gg.values() for v in ("IQ3_M-tr", "IQ3_M-en")),
+            0.05,
+        ),
+        (
+            "Trendyol IQ3_M TR matris EN kaybı",
+            -1.6,
+            ty["matris_dili"]["IQ3_M-tr - IQ3_M-en"]["en"]["puan"],
+            0.05,
+        ),
+        (
+            "Trendyol IQ3_M TR matris EN GA alt",
+            -3.0,
+            ty["matris_dili"]["IQ3_M-tr - IQ3_M-en"]["en"]["ci95"][0],
+            0.05,
+        ),
+        (
+            "Trendyol IQ3_M TR matris EN GA üst",
+            -0.1,
+            ty["matris_dili"]["IQ3_M-tr - IQ3_M-en"]["en"]["ci95"][1],
+            0.05,
+        ),
+    ]
+    # ikinci makinede tekrar: model başına medyan maliyet, ilk kampanyaya göre
+    rel = []
+    for m in costs:
+        for conc in (64, 256):
+            r = statistics.median(paired([TEKRAR / "kosu/yedek" / m], "tr", "en", conc, rho[m]))
+            rel.append((r / float(o[(m, "bf16", "tr", conc)]["tr_en_maliyet"]) - 1) * 100)
+    c += [("tekrar en düşük %", -0.6, min(rel), 0.05), ("tekrar en yüksek %", 1.8, max(rel), 0.05)]
+
+    # uzun istemler: içerik eşleşmeli maliyet ve girdi token oranı
+    def long_costs(session: str, name: str, n_tr: int, concs: tuple) -> tuple[list, list]:
+        d = kosu / session / name
+        cs, ins = [], []
+        for conc in concs:
+            cs.append(statistics.median(paired([d], f"trlong-o{n_tr}", "enlong", conc, n_tr / 256)))
+            tr = [f for f in d.glob(f"trlong-o{n_tr}_c{conc}_r*.json")]
+            ins.append(
+                statistics.median(
+                    jtp(f, "total_input_tokens")
+                    / jtp(d / f.name.replace(f"trlong-o{n_tr}", "enlong"), "total_input_tokens")
+                    for f in tr
+                )
+            )
+        return cs, ins
+
+    qc, qi = long_costs("takip", "qwen3.8-27b-uzun", 360, (1, 16, 64, 128))
+    gc, gi = long_costs("takip", "gemma-4-12b-it-uzun", 350, (1, 16, 64, 128))
+    c += [
+        ("Qwen uzun içerik en düşük", 1.405, min(qc), 0.0005),
+        ("Qwen uzun içerik en yüksek", 1.433, max(qc), 0.0005),
+        ("Gemma 4 uzun içerik en düşük", 1.353, min(gc), 0.0005),
+        ("Gemma 4 uzun içerik en yüksek", 1.372, max(gc), 0.0005),
+        (
+            "uzun içerik / girdi oranı en fazla %",
+            2.2,
+            max((a / b - 1) * 100 for a, b in zip(qc + gc, qi + gi, strict=True)),
+            0.05,
+        ),
+        ("Qwen uzun girdi oranı", 1.40, statistics.median(qi), 0.005),
+        ("Gemma 4 uzun girdi oranı", 1.35, statistics.median(gi), 0.005),
+    ]
+    kc, ki = long_costs("takip-ek2", "qwen3.8-27b-uzun-kv", 360, (256,))
+    c += [
+        ("Qwen KV dolu içerik maliyet", 1.47, kc[0], 0.005),
+        ("Qwen KV dolu oranın üstü %", 4.9, (kc[0] / ki[0] - 1) * 100, 0.05),
+    ]
+    c.append(
+        ("Qwen 256'da KV dolu %", 100, kv_max(FU / "kv/takip-ek2/qwen3.8-27b-uzun-kv/kv.log", 256), 0.15)
+    )
+    tc, ti = long_costs("takip-ek2", "turkish-gemma-9b-t1-uzun", 355, (1, 16, 64, 128))
+    tgkv = FU / "kv/takip-ek2/turkish-gemma-9b-t1-uzun/kv.log"
+    c += [
+        ("TG uzun 1 istek", 1.40, tc[0], 0.005),
+        ("TG uzun 64 istek", 1.59, tc[2], 0.005),
+        ("TG uzun 128 istek", 1.71, tc[3], 0.005),
+        ("TG uzun 64'te KV %", 58, kv_max(tgkv, 64), 0.6),
+        ("TG uzun 128'de KV dolu %", 100, kv_max(tgkv, 128), 0.15),
+        ("TG uzun 128 oranın üstü %", 23, (tc[3] / ti[3] - 1) * 100, 0.5),
+    ]
+    eq = kosu / "takip-ek3" / f"{TG}-uzun-esit"
+    eqr = [
+        jtp(f) / jtp(eq / f.name.replace("enlongpad-tg-o355", "trlong-o355"))
+        for f in eq.glob("enlongpad-tg-o355_c*_r*.json")
+    ]
+    c += [
+        ("TG eşit token en düşük", 0.997, min(eqr), 0.0005),
+        ("TG eşit token en yüksek", 1.000, max(eqr), 0.0005),
+    ]
+
+    # açık döngü
+    def ol(name: str, label: str, field: str) -> float:
+        return statistics.median(
+            jtp(f, field)
+            for f in (kosu / name.split(":")[0] / name.split(":")[1]).glob(f"{label}_c1024_r*.json")
+        )
+
+    c += [
+        ("açık 4/sn TR TPOT", 21.6, ol("takip:qwen3.8-27b-acik-r4", "tr", "median_tpot_ms"), 0.05),
+        ("açık 4/sn EN TPOT", 21.4, ol("takip:qwen3.8-27b-acik-r4", "en", "median_tpot_ms"), 0.05),
+        ("açık 8/sn TR TPOT", 30.9, ol("takip:qwen3.8-27b-acik-r8", "tr", "median_tpot_ms"), 0.05),
+        ("açık 8/sn EN TPOT", 30.5, ol("takip:qwen3.8-27b-acik-r8", "en", "median_tpot_ms"), 0.05),
+    ]
+    d8 = kosu / "takip-ek" / "qwen3.8-27b-acik-icerik-r8"
+    e2e = [
+        jtp(d8 / f.name.replace("en_", "tr-o365_", 1), "median_e2el_ms") / jtp(f, "median_e2el_ms")
+        for f in d8.glob("en_c1024_r*.json")
+    ]
+    d12 = kosu / "takip-ek" / "qwen3.8-27b-acik-icerik-r12"
+    served = [jtp(f, "request_throughput") for f in d12.glob("tr-o365_c1024_r*.json")]
+    ttft = [jtp(f, "median_ttft_ms") / 1000 for f in d12.glob("tr-o365_c1024_r*.json")]
+    en12 = [jtp(f, "request_throughput") for f in d12.glob("en_c1024_r*.json")]
+    c += [
+        ("içerik eşleşmeli 8/sn istek süresi oranı en az", 1.62, min(e2e), 0.005),
+        ("içerik eşleşmeli 8/sn istek süresi oranı en çok", 1.68, max(e2e), 0.005),
+        ("içerik eşleşmeli 12/sn TR karşılanan", 10.5, min(served), 0.05),
+        ("içerik eşleşmeli 12/sn TTFT en az s", 2.5, min(ttft), 0.05),
+        ("içerik eşleşmeli 12/sn TTFT en çok s", 2.7, max(ttft), 0.05),
+        ("içerik eşleşmeli 12/sn EN karşılanan", 11.5, statistics.median(en12), 0.05),
+    ]
+    # doğal bitiş ve doğal metin
+    nat = [json.loads(p.read_text(encoding="utf-8")) for p in (FU / "dogal").glob("*/ozet.json")]
+    tr_diff = [x["fark_yuzde"] for n in nat for k, x in n.items() if k.startswith("tr_")]
+    shift = []
+    for n in nat:
+        for s in ("0", "1"):
+            t, e = n[f"tr_s{s}"], n[f"en_s{s}"]
+            shift.append(
+                abs(
+                    (t["token_kelime"] / t["flores_token_kelime"])
+                    / (e["token_kelime"] / e["flores_token_kelime"])
+                    - 1
+                )
+                * 100
+            )
+    c += [
+        ("doğal TR token/kelime farkı en az %", 1.5, min(tr_diff), 0.05),
+        ("doğal TR token/kelime farkı en çok %", 8.9, max(tr_diff), 0.05),
+    ]
+    c.append(("doğal TR/EN kayması en fazla %", 3.8, max(shift), 0.05))
+    rows = load_csv(REPO / "projects/tr-serve/results/dogal_metin_tpw.csv")
+    by = {(r["model"], r["derlem"], r["dil"]): float(r["dogal_flores_orani"]) for r in rows}
+    rel_n = [(by[(m, d, "tr")] / by[(m, d, "en")] - 1) * 100 for m, d, _ in by if m != "vngrs/Kumru-2B"]
+    c += [
+        ("doğal metin TR/EN kayması en düşük %", -8.1, min(rel_n), 0.05),
+        ("doğal metin TR/EN kayması en yüksek %", 0.9, max(rel_n), 0.05),
+    ]
+    # ölçekli çıktı: eşli medyanlar (makaledeki sınırlama maddesi ve 1,41-1,52)
+    scaled = {
+        TG: (357, 1.531, 1.518),
+        "gemma-4-12b-it": (349, 1.445, 1.434),
+        MI: (380, 1.625, 1.517),
+        QW: (365, 1.517, 1.407),
+    }
+    sc = []
+    for m, (n, fixed, sv) in scaled.items():
+        dirs = [REPO / "projects/tr-serve/results" / s / m for s in ("olcekli", "olcekli-2")]
+        if m == MI:
+            dirs.append(kosu / "takip-ek" / f"{MI}-olcekli")
+        s_runs = paired(dirs, f"tr-o{n}", "en", 256, rho[m])
+        f_runs = paired(dirs[:2], "tr", "en", 256, rho[m])
+        sc.append(statistics.median(s_runs))
+        c += [
+            (f"ölçekli eşli {m}", sv, sc[-1], 0.0005),
+            (f"aynı oturum sabit eşli {m}", fixed, statistics.median(f_runs), 0.0005),
+        ]
+        if m == MI:
+            c.append(("Ministral ölçekli koşu sayısı", 9, len(s_runs), 0))
+    c += [("ölçekli en düşük", 1.41, min(sc), 0.005), ("ölçekli en yüksek", 1.52, max(sc), 0.005)]
+    return c
+
+
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser()
     parser.add_argument("--servis", type=Path, default=REPO / "projects/tr-serve/results/serve-v3")
     args = parser.parse_args()
-    claims = text_claims() + serving_claims(args.servis) + extra_claims(args.servis) + scaled_claims()
+    claims = (
+        text_claims()
+        + serving_claims(args.servis)
+        + extra_claims(args.servis)
+        + scaled_claims()
+        + followup_claims(args.servis)
+    )
     bad = 0
     for name, stated, actual, tol in claims:
         ok = abs(stated - actual) <= tol

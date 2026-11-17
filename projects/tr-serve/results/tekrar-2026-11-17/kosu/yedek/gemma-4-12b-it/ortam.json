@@ -1,0 +1,7 @@
+{"name": "gemma-4-12b-it", "base_image": "vllm/vllm-openai@sha256:d825baf9ce4b1b6bfc5ecc7b79880c7e6748c65a72d697ce3d47607aafa84c6e",
+ "image_id": "sha256:420edd8fb7e09ba7a303d42ab26a71695edd365397fce99233c7dff0337a900d", "tp": 1, "gpus": "1",
+ "cpuset": "32-63", "kernel_cmdline": "BOOT_IMAGE=/vmlinuz-6.8.0-139-generic root=/dev/mapper/ubuntu--vg-ubuntu--lv ro quiet splash transparent_hugepage=never vt.handoff=7", "conc": "1:32 16:256 64:1024 256:4096",
+ "diger_mesgul_gpular": "0",
+ "extra_args": "--no-enable-prefix-caching", "model_revision": "43c9d014b231474fa7212dbb48a762566c2b255d",
+ "ignore_eos": 1, "request_rate": "inf", "order": "alt", "bench_args": "",
+ "driver": "570.211.01", "output_len": 256, "date": "2026-11-16T18:46:13+00:00"}

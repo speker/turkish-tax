@@ -78,6 +78,8 @@ def main() -> int:
     encoded_tr = tok.encode_batch(tr, add_special_tokens=False)
     multi_tr = sum(1 for e in encoded_tr for t in e.tokens if "Ġ" in t[1:-1] and multi_word(t))
     total_tr = sum(len(e.ids) for e in encoded_tr)
+    encoded_en = tok.encode_batch(en, add_special_tokens=False)
+    multi_en = sum(1 for e in encoded_en for t in e.tokens if "Ġ" in t[1:-1] and multi_word(t))
     result = {
         "repo": f"{REPO}@{REV}",
         "flores": f"{FLORES[0]}@{FLORES[1]}",
@@ -92,6 +94,7 @@ def main() -> int:
         "kumru_tr_token": total_tr,
         "kumru_en_token": count(tok, en),
         "tr_tokenlarin_cok_kelimeli_orani": multi_tr / total_tr,
+        "en_tokenlarin_cok_kelimeli_orani": multi_en / sum(len(e.ids) for e in encoded_en),
         "cumle": len(tr),
     }
     result["kumru_tr_en"] = result["kumru_tr_token"] / result["kumru_en_token"]

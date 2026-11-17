@@ -1,0 +1,15 @@
+{
+ "base": "bf16",
+ "other": "bf16b",
+ "fark_tr_eksi_en": -4.319498225280327e-05,
+ "ci95": [
+  -0.00011695093162757409,
+  0.0
+ ],
+ "icerik_basina_ek_kayip_tr_en": 0.0,
+ "icerik_ci95": [
+  NaN,
+  NaN
+ ],
+ "bootstrap": 2000
+}
